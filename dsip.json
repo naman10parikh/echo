@@ -1,0 +1,17 @@
+{
+  "dsip": "0.1",
+  "product": "echo",
+  "levels": ["agent"],
+  "loop": {
+    "cadence": "nightly",
+    "steps": ["refresh-brain", "re-verify-tool-matrix", "run-eval-pyramid", "propose", "validate", "ship"]
+  },
+  "selection": "performance",
+  "eval": {
+    "rubric": "eval/ (Hamel L1 assertions + L2 behavior + L3 trajectory; golden tasks from brain/BATTLE-TESTED-SCENARIOS.md)",
+    "gate": "acceptance-test-green && no-regression",
+    "noSelfGrading": true
+  },
+  "snapback": { "granularity": ["skill", "employee"], "vcs": "git" },
+  "externalIntelligence": { "enabled": true, "source": "vertical ecosystem watch (changelogs, issues, X) per brain/TOOL-MATRIX.md" }
+}
