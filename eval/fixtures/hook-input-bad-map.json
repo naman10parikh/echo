@@ -1,0 +1,10 @@
+{
+  "session_id": "test-echo-state-guard",
+  "cwd": "~/echo",
+  "permission_mode": "default",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "app/api/login/route.ts",
+    "content": "import { NextRequest, NextResponse } from \"next/server\";\n\n// A module-scope Map used as the SOURCE OF TRUTH for a rate-limit counter on serverless (P-01 BUG).\nconst counts = new Map<string, number>();\n\nexport async function POST(req: NextRequest) {\n  const ip = req.headers.get(\"x-forwarded-for\") ?? \"anon\";\n  const n = (counts.get(ip) ?? 0) + 1;\n  counts.set(ip, n);\n  if (n > 5) return NextResponse.json({ error: \"rate limited\" }, { status: 429 });\n  return NextResponse.json({ ok: true });\n}\n"
+  }
+}

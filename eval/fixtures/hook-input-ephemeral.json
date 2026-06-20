@@ -1,0 +1,10 @@
+{
+  "session_id": "test-echo-state-guard",
+  "cwd": "~/echo",
+  "permission_mode": "default",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "app/api/login/route.ts",
+    "content": "import { NextRequest, NextResponse } from \"next/server\";\nimport { Ratelimit } from \"@upstash/ratelimit\";\nimport { Redis } from \"@upstash/redis\";\n\nconst ratelimit = new Ratelimit({\n  redis: Redis.fromEnv(),\n  limiter: Ratelimit.slidingWindow(5, \"60 s\"),\n  // The ONE legit module-scope Map — a lossy deny-list over the authoritative Redis counter (P-02 OK).\n  ephemeralCache: new Map(),\n  timeout: 1000,\n});\n\nexport async function POST(req: NextRequest) {\n  const identity = req.headers.get(\"authorization\") ?? \"anon\";\n  const { success } = await ratelimit.limit(identity);\n  if (!success) return NextResponse.json({ error: \"rate limited\" }, { status: 429 });\n  return NextResponse.json({ ok: true });\n}\n"
+  }
+}
