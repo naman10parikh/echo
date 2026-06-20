@@ -11,6 +11,7 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import { runBrain } from "./commands/brain.js";
+import { runAudit } from "./commands/audit.js";
 
 const program = new Command();
 
@@ -41,8 +42,11 @@ function stub(name: string): void {
 program
   .command("audit")
   .argument("<path>", "path to scan for the new Map() anti-pattern (P-01) vs ephemeralCache (P-02)")
+  .option("--json", "emit JSON instead of the human report")
   .description("scan app/api/** for a source-of-truth Map (BUG, exit!=0) vs ephemeralCache Map (OK) — the turbo seam")
-  .action(() => stub("audit"));
+  .action((path: string, opts: { json?: boolean }) => {
+    process.exit(runAudit(path, { json: opts.json }));
+  });
 
 program
   .command("limiter")
