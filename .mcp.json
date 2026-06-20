@@ -1,7 +1,9 @@
 {
+  "$comment": "echo's OWN MCP server is registered first (the rate-limit/cache vertical tools — built to dist/mcp-server.js by `pnpm build`). context7 is KEPT (the staleness antidote — 'current API of @upstash/ratelimit'). All env values are ${VAR} refs only — NO live keys ever in this file (energy no-log-tokens law; secrets live in the gitignored .env / gh secrets, D7).",
   "mcpServers": {
-    "github":          { "command": "npx", "args": ["-y","@modelcontextprotocol/server-github"], "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}" } },
+    "echo":            { "command": "node", "args": ["dist/mcp-server.js"], "env": { "UPSTASH_REDIS_REST_URL": "${UPSTASH_REDIS_REST_URL}", "UPSTASH_REDIS_REST_TOKEN": "${UPSTASH_REDIS_REST_TOKEN}" } },
     "context7":        { "command": "npx", "args": ["-y","@upstash/context7-mcp"] },
+    "github":          { "command": "npx", "args": ["-y","@modelcontextprotocol/server-github"], "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}" } },
     "memory":          { "command": "npx", "args": ["-y","@modelcontextprotocol/server-memory"], "env": { "MEMORY_FILE_PATH": "./memory/MEMORY.md" } },
     "obsidian":        { "command": "npx", "args": ["-y","@bitbonsai/mcpvault"], "env": { "VAULT_PATH": "./brain" } }
   }
