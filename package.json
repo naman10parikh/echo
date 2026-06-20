@@ -1,0 +1,48 @@
+{
+  "name": "@energy/echo",
+  "version": "0.1.0",
+  "description": "Rate-limiting / caching domain-expert employee for the Energy fleet — correct, tested, costed limiters & caches.",
+  "type": "module",
+  "bin": {
+    "echo": "dist/cli.js"
+  },
+  "main": "dist/cli.js",
+  "types": "dist/cli.d.ts",
+  "files": [
+    "dist/",
+    "brain/",
+    "skills/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "brain:index": "node dist/scripts/build-brain-index.js",
+    "test": "vitest run",
+    "eval": "node dist/eval/golden/run.js"
+  },
+  "keywords": [
+    "ai",
+    "claude",
+    "agent",
+    "rate-limiting",
+    "caching",
+    "upstash",
+    "redis",
+    "idempotency",
+    "energy"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}

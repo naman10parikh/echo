@@ -1,17 +1,60 @@
 {
   "dsip": "0.1",
   "product": "echo",
-  "levels": ["agent"],
+  "levels": ["session", "agent", "user", "org", "fleet"],
   "loop": {
     "cadence": "nightly",
-    "steps": ["refresh-brain", "re-verify-tool-matrix", "run-eval-pyramid", "propose", "validate", "ship"]
+    "steps": [
+      "refresh-brain",
+      "re-verify-tool-matrix",
+      "version-currency",
+      "doc-currency",
+      "link-check",
+      "run-eval-pyramid",
+      "propose",
+      "validate",
+      "ship"
+    ]
   },
-  "selection": "performance",
+  "selection": "performance-novelty",
   "eval": {
-    "rubric": "eval/ (Hamel L1 assertions + L2 behavior + L3 trajectory; golden tasks from brain/BATTLE-TESTED-SCENARIOS.md)",
-    "gate": "acceptance-test-green && no-regression",
-    "noSelfGrading": true
+    "rubric": "eval/golden/run.ts",
+    "gate": "no-regression && all-pass && acceptance-test-green",
+    "noSelfGrading": true,
+    "levels": {
+      "L1": "static assertions on emitted code/audit (does it have the property)",
+      "L2": "behavioral golden tasks against SRH+Redis (binary, F1>=0.8 or kappa>=0.6)",
+      "L3": "trajectory LLM-judge (calibrated)"
+    },
+    "ciBlockingTasks": ["GT-1", "GT-2", "GT-3", "GT-4", "GT-5", "GT-7", "GT-8", "GT-10"]
   },
-  "snapback": { "granularity": ["skill", "employee"], "vcs": "git" },
-  "externalIntelligence": { "enabled": true, "source": "vertical ecosystem watch (changelogs, issues, X) per brain/TOOL-MATRIX.md" }
+  "snapback": {
+    "granularity": ["skill", "employee", "company"],
+    "vcs": "git"
+  },
+  "externalIntelligence": {
+    "enabled": true,
+    "source": "vertical ecosystem watch — @upstash/ratelimit changelog + issues, Next.js cache RFCs, Cloudflare KV/DO docs, the field/ecosystem brain sources (per brain/TOOL-MATRIX.md)",
+    "deterministicHalf": {
+      "tokenless": true,
+      "checks": [
+        "version-currency: npm view @upstash/ratelimit version vs pinned 2.0.81 -> flag drift to brain/ORG_MEMORY.md",
+        "doc-currency: brain caveats (Fluid-Compute magnitudes D-F, Vercel-KV provisioning G-7) have a fresh re-check date",
+        "eval-regression: re-run L1 golden assertions + the acceptance test",
+        "link-check: the brain's cited sources still resolve"
+      ]
+    },
+    "experiments": {
+      "deferredTo": "CLAUDE_CODE_OAUTH_TOKEN",
+      "writesTo": "brain/ORG_MEMORY.md",
+      "tasks": {
+        "X-1": "multi-instance + HTTP/2 concurrent-hold (atomic+shared limiter holds under N instances)",
+        "X-2": "measured commands/request + fixed-instance break-even (validate O-19 arithmetic)",
+        "X-3": "revalidateTag laziness on the pinned Next version (P-26)",
+        "X-4": "distributed SETNX+Lua single-flight serializes origin under N cold-cache reqs (O-15)",
+        "X-5": "GCRA memory/drift characterization",
+        "X-6": "CF-KV-fails-open negative result (O-20)"
+      }
+    }
+  }
 }

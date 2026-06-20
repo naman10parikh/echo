@@ -2,6 +2,10 @@
 .wikimem-cache/
 node_modules/
 
+# build output (tsc) + generated BM25 brain-index cache (reproducible: pnpm build && pnpm run brain:index)
+dist/
+brain/.brain-index.json
+
 # WikiMem test vault personal data
 my-wiki/raw/
 tools/agentgrid/app/release/
