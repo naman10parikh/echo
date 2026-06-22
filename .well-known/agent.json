@@ -1,0 +1,107 @@
+{
+  "protocolVersion": "1.0",
+  "name": "echo",
+  "description": "The Energy fleet's rate-limiting / caching domain-expert employee. Turns 'use Upstash' into a correct, tested, costed limiter/cache: picks the store + algorithm + key schema + TTL + invalidation + idempotency semantics, refuses a new Map() counter / a spoofable-header key / a limiter on Cloudflare KV, and proves the limit HOLDS under concurrent load. Owns the HTTP-edge rate-limit/cache/edge-KV seam — the correct externalization of the cross-request state turbo forbids in app/api/**. Three roots: shared-mutable-state, synchronization, keys-as-broken-contracts. Powered by Energy.",
+  "version": "0.1.0",
+  "provider": {
+    "organization": "Energy",
+    "url": "https://github.com/naman10parikh/echo"
+  },
+  "documentationUrl": "https://github.com/naman10parikh/echo/blob/main/AGENTS.md",
+  "endpoint": "stdio:node dist/mcp-server.js",
+  "transports": [
+    {
+      "type": "mcp",
+      "command": "node",
+      "args": ["dist/mcp-server.js"],
+      "transport": "stdio",
+      "note": "echo's own MCP server — default transport. Each tool reuses the gated Cluster-B command logic (pure functions in src/commands/*), so the MCP tools never drift from the CLI."
+    }
+  ],
+  "capabilities": [
+    "design-limiter",
+    "design-cache",
+    "design-idempotency",
+    "design-stampede",
+    "audit-state",
+    "cost",
+    "key",
+    "recommend-store",
+    "ask",
+    "doctor"
+  ],
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["text/plain", "application/json"],
+  "skills": [
+    {
+      "id": "audit-state",
+      "name": "Audit cross-request state on serverless (the turbo seam)",
+      "description": "Scan a path for the new Map() anti-pattern (P-01): distinguish a source-of-truth Map (a BUG — empty on cold start, raced under Fluid Compute) from the one legit ephemeralCache Map (P-02, OK — a lossy deny-list over Redis). Maps to MCP tool echo_audit_state / CLI `echo audit`.",
+      "tags": ["rate-limit", "cache", "serverless", "new-map", "anti-pattern"],
+      "examples": [
+        "Audit app/api/ for a new Map() rate-limit counter.",
+        "Is this ephemeralCache Map a bug or the legit one?"
+      ]
+    },
+    {
+      "id": "design-limiter",
+      "name": "Design a rate limiter an attacker cannot bypass",
+      "description": "Emit a correct limiter: store + algorithm + identity-key + atomic+shared decision + concurrency cap + fail-open/closed. Refuses spoofable-header keys (O-03/S-02) and non-atomic decisions (O-06) — the two ways every bypassed limiter is built. `echo limiter login` → sliding-window, identity-keyed, fail-CLOSED. Maps to echo_design_limiter / CLI `echo limiter`.",
+      "tags": ["rate-limit", "upstash", "sliding-window", "fail-closed", "concurrency"],
+      "examples": [
+        "Add rate limiting to the login endpoint.",
+        "Throttle this API without keying on X-Forwarded-For."
+      ]
+    },
+    {
+      "id": "design-cache",
+      "name": "Cache a hot path without leaking or serving stale",
+      "description": "Emit a correct cache: SWR default + always-TTL+jitter + per-tenant key + the right invalidation strategy. Version-keys LLM/RAG caches on model+prompt-template+corpus (O-14). Knows revalidateTag is LAZY (P-26). Maps to echo_design_cache / CLI `echo cache`.",
+      "tags": ["cache", "swr", "ttl", "jitter", "invalidation", "llm"],
+      "examples": [
+        "Cache this profile endpoint with stale-while-revalidate.",
+        "Cache an LLM call so an upgrade doesn't serve old answers."
+      ]
+    },
+    {
+      "id": "design-idempotency",
+      "name": "Make a mutating endpoint exactly-once-in-effect",
+      "description": "Emit the Stripe pattern: required Idempotency-Key, atomic SET NX claim, request-fingerprint→400, 24h TTL, store the response, FAIL-CLOSED, DB unique-constraint backstop (O-21). The inverse of rate limiting — reject a duplicate-uncertain request rather than double-charge. Maps to echo_design_idempotency / CLI `echo idempotency`.",
+      "tags": ["idempotency", "stripe", "fail-closed", "payment", "set-nx"],
+      "examples": [
+        "Make POST /charge safe to retry without double-charging.",
+        "Add idempotency to this payment endpoint."
+      ]
+    },
+    {
+      "id": "design-stampede",
+      "name": "Tame both herds (cache-expiry + retry storm)",
+      "description": "Emit the right herd defense: distributed single-flight (SETNX + Lua-guarded release) or SWR for an expensive fill — NEVER an in-process Map (O-15, a lie on serverless). Full-jitter backoff fixes both herds (O-16). Maps to echo_design_stampede / CLI `echo stampede`.",
+      "tags": ["stampede", "thundering-herd", "single-flight", "jitter", "swr"],
+      "examples": [
+        "The origin melts when the cache expires — fix the stampede.",
+        "Stop the retry storm after an outage."
+      ]
+    },
+    {
+      "id": "cost",
+      "name": "Cost a limiter design BEFORE choosing a store",
+      "description": "Count COMMANDS not requests: sliding-window = 4 cmds/req (+1 analytics), Global multiplies the write side ×(1+readRegions). Projects monthly USD + the fixed-instance break-even (O-19, S-16). Maps to echo_cost / CLI `echo cost`.",
+      "tags": ["cost", "upstash", "commands-per-request", "regional", "break-even"],
+      "examples": [
+        "What will a sliding-window limiter cost at 1000 rps?",
+        "Is Upstash too expensive for this limiter?"
+      ]
+    },
+    {
+      "id": "ask",
+      "name": "Search / cite the rate-limit & cache brain",
+      "description": "BM25 ranked search over echo's expertise brain (opinions O-, pitfalls P-, scenarios S-) — returns an answer WITH brain citations (e.g. brain/OPINIONS.md#O-04). Maps to echo_ask / CLI `echo brain`.",
+      "tags": ["knowledge", "search", "rate-limit", "cache"],
+      "examples": [
+        "What does echo think about fail-open vs fail-closed?",
+        "Should I key an IPv6 limiter on /64 or /128?"
+      ]
+    }
+  ]
+}
