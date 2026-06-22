@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Rate-limiting / caching domain-expert employee for the Energy fleet — correct, tested, costed limiters & caches.",
   "type": "module",
+  "author": "Energy Platform",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naman10parikh/echo.git"
+  },
   "bin": {
     "echo": "dist/cli.js"
   },
@@ -26,7 +31,8 @@
     "test:acceptance": "vitest run test/acceptance",
     "test:acceptance:limiter": "vitest run test/acceptance/limiter.test.ts",
     "test:acceptance:cache": "vitest run test/acceptance/cache.test.ts",
-    "eval": "node dist/eval/golden/run.js"
+    "eval": "node dist/eval/golden/run.js",
+    "prepublishOnly": "pnpm build && pnpm test"
   },
   "keywords": [
     "ai",
