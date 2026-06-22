@@ -2,11 +2,11 @@
 /**
  * echo CLI — the rate-limit/cache employee's hands.
  *
- * COORDINATION NOTE (CP123 Wave-B): this file was scaffolded by the Cluster-A builder to land the `brain` command
- * (the queryable memory layer, item A6) with a buildable CLI floor. The Cluster-B builder (item B2/B3/B4) OWNS the
- * full command tree and fills the stub bodies below (audit, limiter, cache, idempotency, stampede, cost, key, store,
- * doctor, example) — replace each `stub(...)` with the real `src/commands/<cmd>.ts` implementation. Do NOT remove
- * the `brain` wiring (A6). Keep `commander` + `chalk` (npm-package-conventions).
+ * Wiring map (CP123 Wave-B, all landed): every command below is fully implemented in `src/commands/<cmd>.ts` — no
+ * stubs remain. `brain` (A6) = the BM25 queryable memory layer; `design` (D1) = the dispatch loop; `audit` (B3) =
+ * the P-01/P-02 turbo-seam detector; `limiter`/`cache`/`idempotency`/`stampede`/`cost`/`key`/`store`/`doctor`/
+ * `example` (B4) = the command cores, each emitting its required brain-anchored property. `instrument()` (E2) logs
+ * one run line per command. Deps are `commander` + `chalk` only (npm-package-conventions).
  */
 import { Command } from "commander";
 import { instrument } from "./observability.js";
