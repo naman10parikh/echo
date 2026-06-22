@@ -46,21 +46,35 @@ export interface CostResult {
 /** Compute the cost model. Pure — reused by the CLI and (E2) the run logger. */
 export function computeCost(input: CostInput): CostResult {
   const algoKey = input.algo.toLowerCase();
+  const knownAlgo = algoKey in BASE_CMDS;
   const base = BASE_CMDS[algoKey] ?? 4; // default to the chatty (safe-high) profile if unknown
   const analyticsAdder = input.analytics ? 1 : 0;
   const readRegions = Math.max(0, input.regions ?? 0);
   const global = readRegions > 0;
+  // Clamp rps to ≥0 — a negative request rate is meaningless and would emit a negative bill (echo never
+  // presents nonsense as a confident answer). Mirrors the regions clamp above.
+  const rps = Math.max(0, input.rps);
 
   // Global multiplies the WRITE side ×(1+readRegions); reads are added once. We approximate the limiter as
   // write-heavy (the real-time counter): writeCmds≈base, so Global → (1+readRegions)*base + analytics (S-16).
   const cmdsPerReq = global ? (1 + readRegions) * base + analyticsAdder : base + analyticsAdder;
 
-  const cmdsPerSecond = cmdsPerReq * input.rps;
+  const cmdsPerSecond = cmdsPerReq * rps;
   const monthlyUSD = cmdsPerSecond * SECONDS_PER_MONTH * USD_PER_CMD;
   // Break-even: cmds/day at which a fixed instance's flat fee equals the per-command bill.
   const breakEvenCmdsPerDay = Math.round(FIXED_INSTANCE_USD_MONTH / (USD_PER_CMD * 30));
 
   const notes: string[] = [];
+  // Warn — don't silently mislead — when the algorithm isn't one echo costs (mirrors `store --runtime` on an
+  // unknown runtime). The number below is the safe-high sliding/token profile, NOT a real count for this algo.
+  if (!knownAlgo) {
+    notes.push(
+      `unknown algorithm "${input.algo}" — costed at the safe-high ${base}-cmd profile; re-run with fixed|sliding|token-bucket for an exact count.`,
+    );
+  }
+  if (rps !== input.rps) {
+    notes.push(`rps clamped to ${rps} (a negative request rate is meaningless).`);
+  }
   notes.push(`${base} base cmds/request for ${input.algo}${analyticsAdder ? " +1 analytics" : ""}.`);
   if (global) {
     notes.push(
@@ -79,7 +93,7 @@ export function computeCost(input: CostInput): CostResult {
   return {
     algo: input.algo,
     cmdsPerReq,
-    rps: input.rps,
+    rps,
     monthlyUSD: Math.round(monthlyUSD * 100) / 100,
     breakEvenCmdsPerDay,
     global,
@@ -95,7 +109,7 @@ export function runCost(input: CostInput, opts: { json?: boolean } = {}): number
     process.stdout.write(JSON.stringify(r, null, 2) + "\n");
     return 0;
   }
-  process.stdout.write(chalk.bold(`echo cost — ${input.algo} @ ${input.rps} req/s${r.global ? " (Global)" : ""}\n\n`));
+  process.stdout.write(chalk.bold(`echo cost — ${input.algo} @ ${r.rps} req/s${r.global ? " (Global)" : ""}\n\n`));
   process.stdout.write(`  commands/request : ${chalk.cyan(String(r.cmdsPerReq))} cmd\n`);
   process.stdout.write(`  projected monthly: ${chalk.cyan("$" + r.monthlyUSD.toLocaleString())}\n`);
   process.stdout.write(`  break-even (fixed): ${chalk.dim(r.breakEvenCmdsPerDay.toLocaleString() + " cmds/day")}\n\n`);

@@ -30,7 +30,11 @@ export default async function middleware(req: NextRequest, ctx: { waitUntil: (p:
   const { success, pending } = await ratelimit.limit(id);
   ctx.waitUntil(pending); // ✅ flush analytics/replication or writes silently drop (P-10)
   return success ? NextResponse.next() : new NextResponse("Too Many Requests", { status: 429 });
-}`,
+}
+
+// ✅ To DISPLAY "X requests left" without burning one, use getRemaining — it doesn't consume (S-12).
+//    NEVER call .limit() just to read the count, and NEVER reverse-engineer the Redis key (window suffix shifts).
+const { remaining } = await ratelimit.getRemaining(id); // non-consuming read for the header`,
   },
   node: {
     note: "Long-running Node — rate-limiter-flexible on TCP Redis (P-12) + a concurrency cap (O-05).",
@@ -49,7 +53,13 @@ export async function handler(req, res, next) {
     return res.status(429).send("Too Many Requests");
   }
 }
-// Pair with RateLimiterConcurrency for "max N in-flight" (O-05/S-17).`,
+// Pair with RateLimiterConcurrency for "max N in-flight" (O-05/S-17).
+
+// ✅ To DISPLAY "X requests left" without burning one, read the state non-consuming — it doesn't consume (S-12).
+//    rate-limiter-flexible: limiter.get(id) → { remainingPoints } (null if no record). On @upstash/ratelimit
+//    the equivalent is getRemaining(id). NEVER call consume()/.limit() just to read, and never GET the raw key.
+const res = await limiter.get(getAuthenticatedId(req)); // non-consuming peek
+const remaining = res ? res.remainingPoints : 20;       // full quota when no record yet`,
   },
   cloudflare: {
     note: "Cloudflare Workers — edge-safe import; for an EXACT global cap use a Durable Object, not KV (O-20/S-14).",
@@ -65,9 +75,12 @@ export default {
       ephemeralCache: new Map(),
       analytics: true,
     });
-    const { success, pending } = await ratelimit.limit(req.headers.get("cf-connecting-ip") ?? "anon");
+    const id = req.headers.get("cf-connecting-ip") ?? "anon";
+    const { success, pending } = await ratelimit.limit(id);
     ctx.waitUntil(pending); // P-10
-    return success ? new Response("ok") : new Response("Too Many Requests", { status: 429 });
+    // ✅ Display remaining without burning a request: getRemaining doesn't consume (S-12).
+    const { remaining } = await ratelimit.getRemaining(id); // non-consuming read for the header
+    return success ? new Response("ok") : new Response("Too Many Requests", { status: 429, headers: { "X-RateLimit-Remaining": String(remaining) } });
   },
 };
 // ⚠️ For an EXACT global limit, use a Durable Object — never Workers KV as a counter (O-20/S-14).`,
