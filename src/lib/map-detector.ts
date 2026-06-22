@@ -49,13 +49,17 @@ const OBJECT_STORE_RE = /\b(?:const|let|var)\s+(\w*(?:cache|counts?|counter|limi
 const EPHEMERAL_RE = /ephemeralCache\s*:/;
 
 /**
- * A declaration is request-local (not the P-01 surface) when it is indented (inside a function body) AND not a
- * module-scope `const/let/var`. Module-scope state is the risk; an in-handler Map is per-request, safe.
+ * A declaration is request-local (not the P-01 surface) when it sits inside a function body rather than at module
+ * scope. Module-scope cross-request state is the risk (empty on cold start + shared/raced under Fluid Compute); an
+ * in-handler `const m = new Map()` is per-request, safe (O-01 escape hatch; flagship skill's BUG/OK table).
+ *
+ * The discriminator is INDENTATION, not the keyword: a `const/let/var` (or a bare construction) at column 0 is
+ * module scope; the SAME keyword indented inside a brace block is request-local. (The earlier
+ * `indented && !module-scope-keyword` check was self-contradictory — an indented `const` matches the keyword regex
+ * because `^\s*` eats the indentation, so a real in-handler `const m = new Map()` was wrongly flagged as P-01.)
  */
 function isLocalDeclaration(rawLine: string): boolean {
-  const indented = /^[ \t]+/.test(rawLine);
-  const isModuleScopeDecl = /^\s*(?:export\s+)?(?:const|let|var)\b/.test(rawLine);
-  return indented && !isModuleScopeDecl;
+  return /^[ \t]+/.test(rawLine); // indented → inside a function body → request-local (not module-scope state)
 }
 
 /**
