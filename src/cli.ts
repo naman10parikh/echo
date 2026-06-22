@@ -10,6 +10,7 @@
  */
 import { Command } from "commander";
 import { runBrain } from "./commands/brain.js";
+import { runDesignCommand } from "./commands/design.js";
 import { runAudit } from "./commands/audit.js";
 import { runLimiter } from "./commands/limiter.js";
 import { runCache } from "./commands/cache.js";
@@ -37,6 +38,17 @@ program
   .description("BM25 query over brain/ — the queryable memory layer (cited OPINIONS/PITFALLS/SCENARIOS rows)")
   .action((question: string, opts: { limit: number; json?: boolean }) => {
     process.exit(runBrain(question, { limit: opts.limit, json: opts.json }));
+  });
+
+// ── D1 (Cluster D) — the dispatch loop: route a multi-step request to the right sub-tools and chain them. ───────
+program
+  .command("design")
+  .argument("<endpoint>", "an endpoint description, e.g. 'POST /checkout', 'login', 'GET /profile', 'llm completion'")
+  .option("--runtime <r>", "edge | node | cf", "node")
+  .option("--json", "emit the routing PLAN as JSON (the ordered sub-tool steps) instead of the chained code")
+  .description("route a request to the right sub-tools (limiter/idempotency/cache/stampede) and chain them (C8)")
+  .action((endpoint: string, opts: { runtime?: string; json?: boolean }) => {
+    process.exit(runDesignCommand(endpoint, { runtime: opts.runtime, json: opts.json }));
   });
 
 // ── B3/B4 (Cluster B) — the command cores. Each emits the required PROPERTY (the L1 golden assertions). ─────────
