@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "name": "echo",
+  "display_name": "echo — Rate-Limiting / Caching Engineer",
+  "description": "The Energy fleet's rate-limiting / caching domain-expert employee. Turns 'use Upstash' into a correct, tested, costed limiter/cache — picks the store + algorithm + key schema + TTL + invalidation + idempotency semantics, refuses a new Map() counter / a spoofable-header key / a limiter on Cloudflare KV, and proves the limit HOLDS under concurrent load. Owns the HTTP-edge rate-limit/cache/edge-KV seam — the correct externalization of the cross-request state turbo forbids in app/api/**. Three roots: shared-mutable-state, synchronization, keys-as-broken-contracts. jobs/queues/workflows is bee's seam; product billing is penny's.",
+  "version": "0.1.0",
+  "author": "Energy Platform",
+  "license": "MIT",
+  "repository": "https://github.com/naman10parikh/echo",
+  "keywords": ["claude-code", "rate-limiting", "caching", "upstash", "redis", "idempotency", "stampede", "swr", "anti-pattern", "harness", "energy"],
+  "mcp_servers": [
+    {
+      "name": "echo",
+      "description": "echo's own rate-limit/cache tools over JSON-RPC (stdio) — echo_audit_state / echo_design_limiter / echo_design_cache / echo_design_idempotency / echo_design_stampede / echo_cost / echo_key / echo_recommend_store / echo_ask / echo_doctor. Each tool reuses the gated Cluster-B command logic (the pure functions in src/commands/*), so the MCP tools never drift from the CLI. Requires `pnpm build` so dist/ exists.",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["dist/mcp-server.js"],
+      "env": { "UPSTASH_REDIS_REST_URL": "${UPSTASH_REDIS_REST_URL}", "UPSTASH_REDIS_REST_TOKEN": "${UPSTASH_REDIS_REST_TOKEN}" }
+    }
+  ],
+  "cli": {
+    "binary": "echo",
+    "entrypoint": "dist/cli.js",
+    "commands": [
+      { "name": "audit", "description": "scan app/api/** for a source-of-truth Map (a BUG, exit!=0) vs the legit ephemeralCache Map (OK) — the turbo seam echo OWNS (P-01/P-02)", "usage": "echo audit <path>" },
+      { "name": "limiter", "description": "emit a correct limiter: store + algorithm + identity-key + atomic + concurrency-cap + fail-mode (login -> sliding-window, fail-CLOSED)", "usage": "echo limiter <endpoint-kind>" },
+      { "name": "cache", "description": "emit a correct cache: SWR + always-TTL+jitter + per-tenant key + invalidation (llm -> version-keyed on model+prompt-template+RAG-corpus)", "usage": "echo cache <pattern>" },
+      { "name": "idempotency", "description": "emit the Stripe pattern: atomic SET NX claim + fingerprint->400 + 24h TTL + fail-CLOSED + DB-unique backstop (O-21)", "usage": "echo idempotency <endpoint>" },
+      { "name": "stampede", "description": "emit the herd defense: distributed single-flight (SETNX+Lua) or SWR — NEVER an in-process Map (O-15)", "usage": "echo stampede <key-cost>" },
+      { "name": "cost", "description": "commands/request x cost projection + the fixed-instance break-even (O-19, S-16)", "usage": "echo cost --algo <a> --rps <n> [--regions <n>] [--analytics]" },
+      { "name": "key", "description": "the ONE cacheKey()/limiterKey() builder — keys-as-contracts (O-13)", "usage": "echo key <entity> <id>" },
+      { "name": "store", "description": "recommend the store for the runtime; refuses CF-KV-as-counter (O-20)", "usage": "echo store --runtime <edge|node|cf>" },
+      { "name": "brain", "description": "BM25 ranked search over brain/ (the Memory layer) -> cited OPINIONS/PITFALLS/SCENARIOS rows", "usage": "echo brain \"<question>\"" },
+      { "name": "doctor", "description": "assert env presence (UPSTASH_REDIS_REST_URL/_TOKEN) at boot (P-13); report store reachability", "usage": "echo doctor" },
+      { "name": "example", "description": "print the runtime-correct upstash/ratelimit-js example (lift-don't-generate, O-22)", "usage": "echo example --runtime <r>" },
+      { "name": "design", "description": "route a request to the right sub-tools (limiter/idempotency/cache/stampede) and chain them (C8)", "usage": "echo design <endpoint>" }
+    ]
+  },
+  "capabilities": {
+    "tools": [
+      { "name": "echo_audit_state", "description": "Scan a path for the new Map() anti-pattern: source-of-truth Map (BUG) vs the legit ephemeralCache Map (OK, P-02). Maps to `echo audit`.", "when_to_use": "Before writing a rate-limit counter / cache value / session / idempotency record in app/api/** (or any serverless handler)." },
+      { "name": "echo_design_limiter", "description": "Emit a correct limiter: store + algorithm + identity-key + atomic+shared + concurrency-cap + fail-mode. Refuses spoofable-header keys. Maps to `echo limiter`.", "when_to_use": "When the task is 'add rate limiting', 'throttle this endpoint', or 'stop brute force on login'." },
+      { "name": "echo_design_cache", "description": "Emit a correct cache: SWR + always-TTL+jitter + per-tenant key + invalidation; version-keys LLM/RAG caches. Maps to `echo cache`.", "when_to_use": "When the task is 'cache this', 'speed up this endpoint', or 'why is my cache stale'." },
+      { "name": "echo_design_idempotency", "description": "Emit the Stripe idempotency pattern: atomic SET NX + fingerprint->400 + 24h TTL + fail-CLOSED + DB-unique backstop. Maps to `echo idempotency`.", "when_to_use": "When a mutating/payment endpoint must be safe to retry without double-charging." },
+      { "name": "echo_design_stampede", "description": "Emit the right herd defense: distributed single-flight (SETNX+Lua) or SWR — never an in-process Map. Maps to `echo stampede`.", "when_to_use": "When the origin melts on cache expiry, or a retry storm hits after an outage." },
+      { "name": "echo_cost", "description": "Count COMMANDS not requests: cmds/request x cost projection + fixed-instance break-even; Global multiplies the write side. Maps to `echo cost`.", "when_to_use": "Before choosing per-command pricing, or when a Redis/Upstash bill blew up." },
+      { "name": "echo_key", "description": "Build the ONE contract key used by reader + invalidator + limiter (keys-as-contracts). Maps to `echo key`.", "when_to_use": "When you need a single canonical cache/limiter key so prefixes can't drift." },
+      { "name": "echo_recommend_store", "description": "Recommend the store for the runtime (Upstash edge / rate-limiter-flexible TCP-node / DO exact-global) and refuse CF-KV-as-counter. Maps to `echo store`.", "when_to_use": "When choosing where cross-request state lives for edge / long-running Node / Cloudflare." },
+      { "name": "echo_ask", "description": "BM25 search over echo's brain — returns an answer WITH brain citations (e.g. brain/OPINIONS.md#O-04). Maps to `echo brain`.", "when_to_use": "When you need echo's stance on a rate-limit/cache question with its source." },
+      { "name": "echo_doctor", "description": "Assert env presence (UPSTASH_REDIS_REST_URL/_TOKEN) — presence flags only, never a value. Maps to `echo doctor`.", "when_to_use": "When verifying a deploy has the Upstash secrets before the limiter fails open on a missing env (P-13)." }
+    ]
+  },
+  "skills": [
+    "skills/echo-state-audit/SKILL.md",
+    "skills/echo-limiter-design/SKILL.md",
+    "skills/echo-invalidation/SKILL.md",
+    "skills/echo-stampede-herd/SKILL.md",
+    "skills/echo-cost-and-migrate/SKILL.md"
+  ],
+  "subAgents": [
+    ".claude/agents/echo-limiter-reviewer.md",
+    ".claude/agents/echo-invalidation-auditor.md"
+  ],
+  "hooks": [
+    "hooks/echo-state-guard.js"
+  ],
+  "settings": ".claude/settings.json",
+  "brain": "brain/MOC - echo.md",
+  "install_instructions": "1. Build the package: pnpm install && pnpm build (so dist/cli.js + dist/mcp-server.js exist).\n2. Add this plugin to Claude Code: Settings -> Plugins -> Add local plugin -> select this directory (or `claude plugin install echo`).\n3. The echo CLI (12 commands), the echo MCP tools (10), the 5 skills (state-audit + limiter-design + invalidation + stampede-herd + cost-and-migrate), the echo-state-guard PreToolUse hook (the dogfood: echo's harness obeys echo's new-Map() law), and the 2 sub-agent personas (echo-limiter-reviewer + echo-invalidation-auditor) are now available."
+}
