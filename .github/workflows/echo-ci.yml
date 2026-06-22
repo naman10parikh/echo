@@ -138,6 +138,7 @@ jobs:
       # Clause 3 (anti-pattern): echo audit exit codes — the P-01 (BUG, exit 1) vs P-02 (OK, exit 0) judgment.
       - name: Acceptance — anti-pattern audit exit codes (P-01 → 1, P-02 → 0)
         run: |
+          set +e  # the audit exits 1 BY DESIGN on the bad fixture; capture rc, don't let bash -e errexit kill the step first
           node dist/cli.js audit eval/fixtures/bad-map-counter/; rc=$?
           if [ "$rc" -ne 1 ]; then echo "::error::bad-map-counter must exit 1 (got $rc)"; exit 1; fi
           node dist/cli.js audit eval/fixtures/ok-ephemeral-cache/; rc=$?
