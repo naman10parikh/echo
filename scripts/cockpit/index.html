@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>echo — cockpit</title>
+    <!--
+      echo cockpit SPA (PLAN §10 / Cluster G). Warm-black Energy design (.claude/rules/design.md):
+      #141312 surfaces (NOT pure black), amber accent, Instrument Serif display + Poppins body — NOT generic purple.
+      Asymmetric layout (sidebar + bento header), editorial serif/sans pairing = the anti-AI-slop move.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      /* ── Energy design tokens — warm black + amber + editorial serif/sans (canonical, not generic-purple). ── */
+      :root {
+        --bg: #141312;            /* warm black surface (NOT #000 / #09090b) */
+        --bg-2: #1c1a18;          /* raised card surface */
+        --bg-3: #252220;          /* hover / active surface */
+        --border: #322e2a;        /* warm border */
+        --border-2: #443f39;      /* stronger border */
+        --text: #f2ede6;          /* soft warm off-white (NOT pure white) */
+        --text-2: #b8afa4;        /* muted body */
+        --text-3: #837a6f;        /* dim / meta */
+        --amber: #e0a458;         /* the Energy accent */
+        --amber-soft: #c79552;
+        --amber-bg: rgba(224, 164, 88, 0.12);
+        --green: #7fae6a;         /* pass */
+        --red: #d2705f;           /* fail */
+        --blue: #6f9fc4;          /* citation / link */
+        --serif: "Instrument Serif", Georgia, serif;
+        --sans: "Poppins", system-ui, -apple-system, sans-serif;
+        --radius: 12px;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-weight: 300;
+        font-size: 14px;
+        line-height: 1.6;
+        display: grid;
+        grid-template-columns: 232px 1fr; /* asymmetric: editorial sidebar + content */
+        min-height: 100vh;
+      }
+      @media (max-width: 720px) { body { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+      /* ── Sidebar (the nav) ── */
+      .sidebar {
+        background: var(--bg-2);
+        border-right: 1px solid var(--border);
+        padding: 28px 18px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+      }
+      .brand { font-family: var(--serif); font-size: 34px; line-height: 1; color: var(--text); letter-spacing: -0.01em; }
+      .brand .dot { color: var(--amber); }
+      .tagline { font-size: 11.5px; color: var(--text-3); margin-top: 8px; font-style: italic; font-family: var(--serif); }
+      .nav { margin-top: 32px; display: flex; flex-direction: column; gap: 4px; }
+      .nav button {
+        all: unset;
+        cursor: pointer;
+        padding: 10px 12px;
+        border-radius: var(--radius);
+        color: var(--text-2);
+        font-size: 13.5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: background 180ms ease, color 180ms ease;
+      }
+      .nav button:hover { background: var(--bg-3); color: var(--text); }
+      .nav button.active { background: var(--amber-bg); color: var(--amber); }
+      .nav button .ic { width: 16px; text-align: center; opacity: 0.85; font-style: normal; }
+      .nav button:focus-visible { box-shadow: 0 0 0 2px rgba(224, 164, 88, 0.5); }
+      .sidebar .foot { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 10.5px; color: var(--text-3); }
+      .sidebar .foot a { color: var(--text-3); }
+
+      /* ── Content ── */
+      .content { padding: 36px 44px 64px; max-width: 1080px; }
+      .view-head { margin-bottom: 24px; }
+      .view-head h1 { font-family: var(--serif); font-weight: 400; font-size: 40px; margin: 0; letter-spacing: -0.01em; line-height: 1.05; }
+      .view-head p { color: var(--text-2); margin: 8px 0 0; font-size: 13.5px; max-width: 64ch; }
+
+      .card {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+      }
+      .grid { display: grid; gap: 14px; }
+      /* bento: asymmetric stat strip */
+      .stats { grid-template-columns: 1.4fr 1fr 1fr; }
+      @media (max-width: 720px) { .stats { grid-template-columns: 1fr; } .content { padding: 24px 18px 48px; } }
+      .stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
+      .stat .v { font-family: var(--serif); font-size: 30px; color: var(--text); margin-top: 4px; }
+      .stat .v.amber { color: var(--amber); }
+      .stat .sub { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+
+      /* ── search / ask input ── */
+      .searchbar { display: flex; gap: 10px; margin-bottom: 18px; }
+      .searchbar input {
+        flex: 1;
+        background: var(--bg-2);
+        border: 1px solid var(--border-2);
+        border-radius: var(--radius);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 14px;
+        padding: 12px 14px;
+        outline: none;
+        transition: border-color 160ms ease;
+      }
+      .searchbar input::placeholder { color: var(--text-3); }
+      .searchbar input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(224, 164, 88, 0.14); }
+      .searchbar button {
+        all: unset;
+        cursor: pointer;
+        background: var(--amber);
+        color: #1a1714;
+        font-weight: 500;
+        font-size: 13.5px;
+        padding: 0 20px;
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        transition: background 160ms ease;
+      }
+      .searchbar button:hover { background: var(--amber-soft); }
+      .searchbar button:focus-visible { box-shadow: 0 0 0 2px rgba(224, 164, 88, 0.6); }
+
+      /* ── hit list (brain search + ask citations) ── */
+      .hit { padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-2); margin-bottom: 10px; }
+      .hit .cite { font-family: var(--sans); font-weight: 500; color: var(--amber); font-size: 12.5px; }
+      .hit .score { color: var(--text-3); font-size: 11px; float: right; }
+      .hit .title { color: var(--text); margin-top: 4px; font-size: 14px; }
+      .hit .snip { color: var(--text-2); margin-top: 6px; font-size: 12.5px; }
+
+      .answer { border-left: 3px solid var(--amber); padding: 14px 18px; background: var(--bg-2); border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 16px; }
+      .answer .title { font-family: var(--serif); font-size: 20px; color: var(--text); line-height: 1.2; }
+      .answer .body { color: var(--text-2); margin-top: 8px; white-space: pre-wrap; font-size: 13px; }
+      .answer .cites { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+      .chip { font-size: 11px; color: var(--blue); border: 1px solid var(--border-2); border-radius: 99px; padding: 3px 10px; }
+
+      /* ── artifact browser layout ── */
+      .artifact-wrap { display: grid; grid-template-columns: 220px 1fr; gap: 18px; }
+      @media (max-width: 720px) { .artifact-wrap { grid-template-columns: 1fr; } }
+      .artifact-nav button {
+        all: unset; cursor: pointer; display: block; width: 100%;
+        padding: 9px 12px; border-radius: 10px; color: var(--text-2); font-size: 12.5px; margin-bottom: 3px;
+        transition: background 160ms ease, color 160ms ease;
+      }
+      .artifact-nav button:hover { background: var(--bg-3); color: var(--text); }
+      .artifact-nav button.active { background: var(--amber-bg); color: var(--amber); }
+      .artifact-body { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px; min-height: 320px; max-height: 70vh; overflow-y: auto; }
+      .md h1, .md h2, .md h3 { font-family: var(--serif); font-weight: 400; color: var(--text); line-height: 1.2; }
+      .md h1 { font-size: 28px; margin: 0 0 12px; }
+      .md h2 { font-size: 21px; margin: 22px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+      .md h3 { font-size: 16px; margin: 16px 0 6px; color: var(--amber-soft); }
+      .md p, .md li { color: var(--text-2); font-size: 13px; }
+      .md code { background: var(--bg-3); border-radius: 5px; padding: 1px 6px; font-size: 12px; color: #d8c8a0; }
+      .md a { color: var(--blue); }
+      .md table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 12px; }
+      .md th, .md td { border: 1px solid var(--border); padding: 6px 9px; text-align: left; color: var(--text-2); }
+      .md th { color: var(--text); background: var(--bg-3); }
+
+      /* ── tables (runs + evals) ── */
+      table.data { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+      table.data th { text-align: left; color: var(--text-3); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 12px; border-bottom: 1px solid var(--border-2); }
+      table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-2); }
+      table.data tr:hover td { background: var(--bg-2); }
+      .badge { font-size: 11px; padding: 2px 9px; border-radius: 99px; font-weight: 500; }
+      .badge.pass { color: var(--green); background: rgba(127, 174, 106, 0.14); }
+      .badge.fail { color: var(--red); background: rgba(210, 112, 95, 0.14); }
+      .badge.block { color: var(--red); background: rgba(210, 112, 95, 0.10); }
+      .badge.adv { color: var(--text-3); background: var(--bg-3); }
+      .badge.ok { color: var(--green); background: rgba(127, 174, 106, 0.14); }
+      .badge.err { color: var(--red); background: rgba(210, 112, 95, 0.14); }
+      .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; color: var(--text-3); }
+
+      .loading, .empty { color: var(--text-3); font-size: 13px; padding: 20px 0; font-style: italic; }
+      .err-banner { color: var(--red); background: rgba(210, 112, 95, 0.10); border: 1px solid rgba(210, 112, 95, 0.3); border-radius: var(--radius); padding: 12px 16px; font-size: 12.5px; }
+      .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin: 22px 0 10px; }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">echo<span class="dot">.</span></div>
+      <div class="tagline">state that outlives the request</div>
+      <nav class="nav" id="nav">
+        <button data-view="brain" class="active"><span class="ic">◆</span> Brain browser</button>
+        <button data-view="runs"><span class="ic">▤</span> Run log</button>
+        <button data-view="evals"><span class="ic">✓</span> Eval scores</button>
+        <button data-view="ask"><span class="ic">?</span> Ask the employee</button>
+      </nav>
+      <div class="foot">rate-limit / cache employee<br />powered by <span style="color: var(--amber-soft)">Energy</span></div>
+    </aside>
+    <main class="content" id="content">
+      <div class="loading">Loading…</div>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

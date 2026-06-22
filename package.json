@@ -31,6 +31,8 @@
     "test:acceptance": "vitest run test/acceptance",
     "test:acceptance:limiter": "vitest run test/acceptance/limiter.test.ts",
     "test:acceptance:cache": "vitest run test/acceptance/cache.test.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "cockpit": "node scripts/cockpit.mjs",
     "eval": "node dist/eval/golden/run.js",
     "prepublishOnly": "pnpm build && pnpm test"
   },
