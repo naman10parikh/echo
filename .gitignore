@@ -6,6 +6,9 @@ node_modules/
 dist/
 brain/.brain-index.json
 
+# Observability run log (append-only runtime trace — E2/C10; the logs/ dir is tracked via .gitkeep, the data is not)
+logs/runs.jsonl
+
 # RSI engine generated output (drift proposals + run report — uploaded as a CI artifact, never source)
 workflows/proposals/
 rsi-report.txt

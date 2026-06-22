@@ -8,6 +8,7 @@
  * (E2) logs per design. Arithmetic matches S-16 exactly.
  */
 import chalk from "chalk";
+import { recordDomainMetric } from "../observability.js";
 
 // Upstash per-command pricing (2026): $0.20 / 100K commands, reads = writes (TOOL-MATRIX §2).
 const USD_PER_CMD = 0.2 / 100_000;
@@ -88,6 +89,8 @@ export function computeCost(input: CostInput): CostResult {
 
 export function runCost(input: CostInput, opts: { json?: boolean } = {}): number {
   const r = computeCost(input);
+  // E2/C10: surface echo's domain-native metric into the run log line (commands/request + projected monthly cost).
+  recordDomainMetric({ cmdsPerReq: r.cmdsPerReq, monthlyUSD: r.monthlyUSD });
   if (opts.json) {
     process.stdout.write(JSON.stringify(r, null, 2) + "\n");
     return 0;

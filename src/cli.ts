@@ -9,6 +9,7 @@
  * the `brain` wiring (A6). Keep `commander` + `chalk` (npm-package-conventions).
  */
 import { Command } from "commander";
+import { instrument } from "./observability.js";
 import { runBrain } from "./commands/brain.js";
 import { runDesignCommand } from "./commands/design.js";
 import { runAudit } from "./commands/audit.js";
@@ -28,6 +29,10 @@ program
   .name("echo")
   .description("Rate-limiting / caching domain-expert employee — correct, tested, costed limiters & caches.")
   .version("0.1.0");
+
+// ── E2 (Cluster E) — observability: time every command + append one JSON line to logs/runs.jsonl on exit.
+// `echo cost` additionally surfaces commands/request + monthly cost (echo's domain-native metric, O-19/C10).
+instrument(program);
 
 // ── A6 (Cluster A) — the queryable memory layer (REAL). Do not stub. ───────────────────────────────────────────
 program
