@@ -6,6 +6,10 @@ node_modules/
 dist/
 brain/.brain-index.json
 
+# RSI engine generated output (drift proposals + run report — uploaded as a CI artifact, never source)
+workflows/proposals/
+rsi-report.txt
+
 # WikiMem test vault personal data
 my-wiki/raw/
 tools/agentgrid/app/release/

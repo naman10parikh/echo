@@ -1,20 +1,94 @@
-name: echo RSI
-# CP123: dispatch-only until the RSI engine (workflows/rsi.workflow.js + eval gate) is built in Wave B/E.
-# The Claude half additionally needs CLAUDE_CODE_OAUTH_TOKEN (chairman checklist, D8). Guarded = always green.
+name: echo RSI (deterministic, $0)
+
+# CP123 (D2): echo's durable RSI schedule — the DETERMINISTIC half of the Darwin
+# AutoLab loop (PLAN §11, workflows/rsi.workflow.js).
+#
+# THE #1 FLEET-GAP LESSON (CP117 burned on "written != enabled"): the triggers below are
+# ENABLED, not commented. `workflow_dispatch` runs it on demand from the Actions tab; the
+# daily `schedule` runs the deterministic loop unattended.
+#
+# It runs the DETERMINISTIC HALF only ($0 / tokenless, D8/D14): version-currency
+# (`npm view @upstash/ratelimit` vs the pin) -> re-verify brain pins -> doc-currency
+# caveat markers -> eval-regression (skip-not-fail until E1) -> hermetic link-check ->
+# PROPOSE (never auto-edits the brain). It is GUARDED-GREEN: if the engine or package.json
+# isn't built yet it exits 0 (never a red merge surface).
+#
+# The CLAUDE HALF of RSI (the 6 experiments X-1..X-6 writing measured results to
+# brain/ORG_MEMORY.md) is DEFERRED to CLAUDE_CODE_OAUTH_TOKEN (chairman checklist, D8) —
+# its absence is NOT a gap; the deterministic half runs without it. The gate below is
+# present-and-wired so it lights up the moment the secret is set.
+
 on:
   workflow_dispatch:
+  # 09:17 UTC daily (off-peak; odd minute to avoid the top-of-hour GHA stampede).
+  schedule:
+    - cron: "17 9 * * *"
 
 permissions:
   contents: read
 
 jobs:
-  rsi:
+  deterministic-rsi:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Engine guard
+
+      - name: Detect runtime
+        id: rt
         run: |
-          if [ ! -f workflows/rsi.workflow.js ]; then
-            echo "RSI engine not built yet (CP123 cluster E) — exiting green."; exit 0
+          if [ -f package.json ] && [ -f workflows/rsi.workflow.js ]; then
+            echo "armed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "armed=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "engine present — deterministic half would run here (wired in cluster E)"
+
+      - uses: pnpm/action-setup@v4
+        if: steps.rt.outputs.armed == 'true'
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        if: steps.rt.outputs.armed == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install + build
+        if: steps.rt.outputs.armed == 'true'
+        run: |
+          pnpm install --frozen-lockfile || pnpm install
+          pnpm build
+
+      - name: Run the deterministic RSI engine ($0, tokenless)
+        if: steps.rt.outputs.armed == 'true'
+        # Shells `npm view` + reads brain/**.md + (when built) re-runs the eval pyramid.
+        # It DETECTS + PROPOSES drift; it never calls the model and never auto-edits.
+        run: |
+          node workflows/rsi.workflow.js | tee rsi-report.txt
+
+      - name: Upload the RSI run report (drift proposals + eval gate)
+        if: steps.rt.outputs.armed == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: echo-rsi-report
+          path: |
+            rsi-report.txt
+            workflows/proposals/
+          if-no-files-found: ignore
+
+      # The CLAUDE half (DEFERRED, D8): runs ONLY when CLAUDE_CODE_OAUTH_TOKEN is set.
+      # Until the chairman provisions the token this step is skipped (the deterministic
+      # half above already keeps the workflow green) — present-and-wired, not a miss.
+      - name: Run the Claude RSI half (experiments X-1..X-6, deferred)
+        if: steps.rt.outputs.armed == 'true' && env.CLAUDE_CODE_OAUTH_TOKEN != ''
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          echo "CLAUDE_CODE_OAUTH_TOKEN present — running the 6 measured experiments (Opus 4.8, max)."
+          node workflows/rsi.workflow.js --claude-half
+
+      - name: Engine guard (not built yet)
+        if: steps.rt.outputs.armed == 'false'
+        run: |
+          echo "RSI engine (workflows/rsi.workflow.js) or package.json not present yet — exiting green."
+          exit 0
