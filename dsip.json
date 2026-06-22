@@ -38,7 +38,7 @@
     "deterministicHalf": {
       "tokenless": true,
       "checks": [
-        "version-currency: npm view @upstash/ratelimit version vs pinned 2.0.81 -> flag drift to brain/ORG_MEMORY.md",
+        "version-currency: npm view @upstash/ratelimit version vs pinned 2.0.8 -> flag drift to brain/ORG_MEMORY.md",
         "doc-currency: brain caveats (Fluid-Compute magnitudes D-F, Vercel-KV provisioning G-7) have a fresh re-check date",
         "eval-regression: re-run L1 golden assertions + the acceptance test",
         "link-check: the brain's cited sources still resolve"

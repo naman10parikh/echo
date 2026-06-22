@@ -8,7 +8,7 @@
 
 | Check | Frequency | Action on anomaly |
 | --- | --- | --- |
-| **Version-currency** — `npm view @upstash/ratelimit version` vs the pinned **2.0.81** | Nightly | Flag drift to `brain/ORG_MEMORY.md` |
+| **Version-currency** — `npm view @upstash/ratelimit version` vs the pinned **2.0.8** | Nightly | Flag drift to `brain/ORG_MEMORY.md` |
 | **Doc-currency** — the brain's flagged caveats (Fluid-Compute magnitudes, Vercel-KV provisioning, version pins) have a fresh re-check date | Nightly | Flag stale caveats to `brain/ORG_MEMORY.md` |
 | **Eval-regression** — re-run the L1 golden assertions + THE acceptance test (the 8 🔴 golden tasks) | Nightly + every PR/push | Any red = a diff proposed; CI red-blocks the 🔴 tasks |
 | **Link-check** — the brain's cited sources still resolve (the receipts stay valid) | Nightly | Flag a broken source link |
@@ -16,7 +16,7 @@
 ## Health indicators
 
 - **Healthy:** `darwin-check dsip.json` ≥ L1; the latest `echo-rsi.yml` run is green; no version drift unflagged.
-- **Warning:** version drift detected (pinned 2.0.81 ≠ latest) OR a brain caveat past its re-check date.
+- **Warning:** version drift detected (pinned 2.0.8 ≠ latest) OR a brain caveat past its re-check date.
 - **Critical:** the acceptance test is red OR a 🔴 golden task regressed → CI blocks the merge.
 
 ## The deferred Claude half (lights up on `CLAUDE_CODE_OAUTH_TOKEN`, D8)

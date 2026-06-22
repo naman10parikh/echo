@@ -40,7 +40,7 @@ is still safe* (a lossy deny-list short-circuit over the authoritative store). T
 
 ## DEFAULT STACK (echo's recommendation — the one-screen)
 
-- **Edge / serverless (the energy default host):** `@upstash/ratelimit` (pinned **2.0.81**) on **Upstash Redis
+- **Edge / serverless (the energy default host):** `@upstash/ratelimit` (pinned **2.0.8**) on **Upstash Redis
   (HTTP)** — **sliding-window** for HTTP throttle, **token-bucket** for bursty APIs. `ephemeralCache` ON;
   `waitUntil(pending)` when analytics/multi-region is on; `timeout` tuned per fail-open/closed need; **Regional, not
   Global** for write-heavy limiters (Global multiplies the write side `×(1+readRegions)`).
