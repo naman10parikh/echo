@@ -1,8 +1,16 @@
-name: CI
+name: echo CI
+
+# CP123 Cluster E (E3/E4): echo's canonical CI. `harness-structure` + `build-test` keep the skeleton +
+# build/test gates; `acceptance` runs THE acceptance test (PLAN §5) against a hermetic SRH+Redis envelope
+# (D15: local-first / $0 / no Upstash creds); `eval` red-blocks on the 8 🔴 golden tasks (PLAN §6). The
+# `live-upstash` job is workflow_dispatch-only (ADDITIVE, secret-gated, NEVER a merge blocker — D7/D15).
+# (Renamed from ci.yml so the one canonical CI file matches the spec; no duplicate workflow runs.)
+
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch: # enables the on-demand live-upstash job below
 
 permissions:
   contents: read
@@ -62,3 +70,133 @@ jobs:
       - name: Skeleton phase
         if: steps.rt.outputs.armed == 'false'
         run: echo "skeleton phase — build gate auto-arms when package.json lands (CP123 Wave B)"
+
+  # ── THE acceptance test (PLAN §5; E4) — red-blocking on PR + push to main. ──────────────────────────────────
+  # Boots a hermetic SRH+Redis envelope ($0, NO Upstash creds — D15). The Vitest clauses are local-first
+  # (in-proc when SRH is absent) but here SRH is UP, so the SRH limiter smoke proves the REAL @upstash/ratelimit
+  # REST path (HARNESS-OVERRIDES §11: "the limiter actually hitting SRH, rc 0, proven by run-id").
+  acceptance:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      srh:
+        image: hiett/serverless-redis-http:latest
+        env:
+          SRH_MODE: env
+          SRH_TOKEN: example_token
+          SRH_CONNECTION_STRING: "redis://redis:6379"
+        ports:
+          - 8080:80
+    env:
+      # hermetic, inline — no Upstash account (D15). @upstash/ratelimit talks to SRH exactly as to Upstash.
+      SRH_TOKEN: example_token
+      UPSTASH_REDIS_REST_URL: http://localhost:8080
+      UPSTASH_REDIS_REST_TOKEN: example_token
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install + build
+        run: |
+          pnpm install --frozen-lockfile || pnpm install
+          pnpm build
+      - name: Wait for SRH to be reachable
+        # SRH speaks the Upstash REST protocol: a command is `POST /` with a JSON array body. `["PING"]` → PONG.
+        # (A GET `/ping` PATH returns "Endpoint not found" on SRH — do NOT health-check that way.)
+        run: |
+          for i in $(seq 1 30); do
+            out=$(curl -fsS -X POST "$UPSTASH_REDIS_REST_URL" \
+              -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN" \
+              -H "Content-Type: application/json" -d '["PING"]' 2>/dev/null || true)
+            case "$out" in
+              *PONG*) echo "SRH up after ${i}s"; exit 0 ;;
+            esac
+            sleep 1
+          done
+          echo "::error::SRH did not become reachable at $UPSTASH_REDIS_REST_URL"; exit 1
+      # Clause 1 (limiter) + Clause 2 (cache): the Vitest acceptance suite (limiter runs in SRH mode here).
+      - name: Acceptance — limiter holds (admitted == limit) + cache SWR + TTL jitter
+        run: |
+          pnpm run test:acceptance:limiter
+          pnpm run test:acceptance:cache
+      # Clause 1, the REAL lib against the booted SRH (the §11 run-id proof: real @upstash/ratelimit hits SRH).
+      - name: Acceptance — SRH limiter smoke (real @upstash/ratelimit vs SRH REST path)
+        run: node scripts/acceptance/srh-limiter-smoke.mjs
+      # Clause 3 (anti-pattern): echo audit exit codes — the P-01 (BUG, exit 1) vs P-02 (OK, exit 0) judgment.
+      - name: Acceptance — anti-pattern audit exit codes (P-01 → 1, P-02 → 0)
+        run: |
+          node dist/cli.js audit eval/fixtures/bad-map-counter/; rc=$?
+          if [ "$rc" -ne 1 ]; then echo "::error::bad-map-counter must exit 1 (got $rc)"; exit 1; fi
+          node dist/cli.js audit eval/fixtures/ok-ephemeral-cache/; rc=$?
+          if [ "$rc" -ne 0 ]; then echo "::error::ok-ephemeral-cache must exit 0 (got $rc)"; exit 1; fi
+          echo "anti-pattern clause OK (P-01 → 1, P-02 → 0)"
+
+  # ── Eval pyramid (PLAN §6; E1) — red-blocking on the 8 🔴 golden tasks + the L2 calibration bar. ─────────────
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install + build
+        run: |
+          pnpm install --frozen-lockfile || pnpm install
+          pnpm build
+      # `npm run eval` exits non-zero iff a 🔴 golden task fails or a corpus falls below F1≥0.8/κ≥0.6 (the gate).
+      # The L3 judge runs deterministically here (no ANTHROPIC_API_KEY in CI) — non-flaky, present-and-wired.
+      - name: Eval — 8 🔴 golden tasks + L2 calibration (pass^k, binary)
+        run: pnpm run eval
+
+  # ── Live Upstash (X-1) — ON-DEMAND only, ADDITIVE, secret-gated, NEVER a merge blocker (D7/D15). ────────────
+  # Proves the real Upstash REST path + multi-instance behavior against a free-tier account. Skipped unless the
+  # chairman has set UPSTASH_REDIS_REST_URL/_TOKEN secrets (CHAIRMAN-CHECKLIST ECHO-2).
+  live-upstash:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard — skip cleanly if secrets are unset (additive, non-blocking)
+        id: guard
+        run: |
+          if [ -z "$UPSTASH_REDIS_REST_URL" ] || [ -z "$UPSTASH_REDIS_REST_TOKEN" ]; then
+            echo "live=false" >> "$GITHUB_OUTPUT"
+            echo "UPSTASH_* secrets not set — skipping live-upstash (CHAIRMAN-CHECKLIST ECHO-2). Not a failure."
+          else
+            echo "live=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: pnpm/action-setup@v4
+        if: steps.guard.outputs.live == 'true'
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.live == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install + build + live SRH smoke against real Upstash
+        if: steps.guard.outputs.live == 'true'
+        run: |
+          pnpm install --frozen-lockfile || pnpm install
+          pnpm build
+          node scripts/acceptance/srh-limiter-smoke.mjs

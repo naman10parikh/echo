@@ -23,6 +23,9 @@
     "dev": "tsc --watch",
     "brain:index": "node dist/scripts/build-brain-index.js",
     "test": "vitest run",
+    "test:acceptance": "vitest run test/acceptance",
+    "test:acceptance:limiter": "vitest run test/acceptance/limiter.test.ts",
+    "test:acceptance:cache": "vitest run test/acceptance/cache.test.ts",
     "eval": "node dist/eval/golden/run.js"
   },
   "keywords": [
@@ -44,6 +47,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "typescript": "^5.6.0",
     "vitest": "^4.1.9"
   }
