@@ -1,0 +1,106 @@
+# echo
+
+> The Energy fleet's **rate-limiting / caching** domain-expert employee — a senior distributed-systems engineer
+> that turns "use Upstash" into a _correct, tested, costed_ limiter/cache. It externalizes the cross-request state
+> that turbo forbids in `app/api/**`, refuses a `new Map()` counter / a spoofable-header key / a limiter on
+> Cloudflare KV, and proves the limit actually HOLDS under concurrent load. A tool-employee operated by coding
+> agents (CLI + MCP) and watched by the chairman (the local cockpit). Reachability is N/A. Powered by Energy.
+
+This is the agent-readable map of echo's docs and surfaces. **Read `AGENTS.md` first** for how to invoke every
+tool, the turbo boundary, and the NOT-list. Paths are repo-relative to the repo root.
+
+## The three roots (read this before anything else)
+
+Every failure in this vertical reduces to one of three roots — classify a new bug against them:
+
+1. **Shared-mutable-state** — a Map / a header / a non-atomic counter / a per-instance dedup trusted when it
+   shouldn't be. Fix: an atomic + shared counter in an external store; keys built in one place.
+2. **Synchronization** — cache-expiry stampedes and retry storms. Fix: jitter (TTLs + full-jitter backoff) +
+   distributed coordination (single-flight, not in-process).
+3. **Keys-as-broken-contracts** — key trust (spoofable headers) and coverage/prefix drift. Fix: build the key in
+   ONE function and make coverage a test.
+
+**One-screen default stack (echo's recommendation):** Edge/serverless → `@upstash/ratelimit` (sliding-window for
+HTTP throttle / token-bucket for bursty) on Upstash Redis (HTTP), `ephemeralCache` ON, `waitUntil(pending)` when
+analytics/multi-region, `timeout` tuned per fail-open/closed, **Regional not Global** for write-heavy limiters.
+Long-running Node → `rate-limiter-flexible` on ioredis → Redis/Valkey (TCP). Exact global at the edge → Cloudflare
+Durable Object. **Cloudflare KV is a read cache, never a counter.** Caching → SWR + always-TTL+jitter + version-key
+LLM responses + centralized invalidation. Idempotency → Stripe pattern, fail-CLOSED, DB-unique backstop. Default is
+wired; alternatives are documented, not wired (`brain/TOOL-MATRIX.md`).
+
+## Start here
+
+- [AGENTS.md](./AGENTS.md): what echo does, how to invoke every CLI/MCP tool, the turbo boundary, the NOT-list.
+- [CLAUDE.md](./CLAUDE.md): Claude Code operating doc for this repo (the one-line law + the 3 roots + cluster order).
+- [README.md](./README.md): the human-facing intro + the CLI quick-reference + the acceptance test.
+- [QUICKSTART.md](./QUICKSTART.md): where everything lives.
+- [SANDBOX.md](./SANDBOX.md): the SRH+Redis acceptance envelope ($0, no creds) + the on-demand live-Upstash job.
+
+## Identity
+
+- [identity/SOUL.md](./identity/SOUL.md): who echo is — Identity → Personality → Boundaries.
+- [identity/BRAND.md](./identity/BRAND.md): name rationale, tagline, design tokens.
+- [identity/MEMORY.md](./identity/MEMORY.md): echo's load-bearing laws (the one-line state law + the 3 roots + the default stack).
+- [.well-known/agent.json](./.well-known/agent.json): the A2A agent card (name / description / endpoint / capabilities / skills).
+
+## Tools — the `echo` CLI (Bash-invokable; `--help`/`--version` exit 0)
+
+- `echo audit <path>` — scan `app/api/**` for a source-of-truth Map (a BUG, exit≠0) vs the legit `ephemeralCache` Map (OK) — the turbo seam echo OWNS (P-01/P-02).
+- `echo limiter <endpoint-kind>` — emit a correct limiter: store + algorithm + identity-key + atomic + concurrency-cap + fail-mode (e.g. `echo limiter login` → sliding-window, fail-CLOSED).
+- `echo cache <pattern>` — emit a correct cache: SWR + always-TTL+jitter + per-tenant key + invalidation (`echo cache llm` → version-keyed on model+prompt-template+RAG-corpus).
+- `echo idempotency <endpoint>` — emit the Stripe pattern: atomic SET NX claim + fingerprint→400 + 24h TTL + fail-CLOSED + DB-unique backstop (O-21).
+- `echo stampede <key-cost>` — emit the herd defense: distributed single-flight (SETNX+Lua) or SWR — NEVER an in-process Map (O-15).
+- `echo cost --algo <a> --rps <n> [--regions <n>] [--analytics]` — commands/request × cost projection + the fixed-instance break-even (O-19, S-16).
+- `echo key <entity> <id>` — the ONE `cacheKey()`/`limiterKey()` builder — keys-as-contracts (O-13).
+- `echo store --runtime <edge|node|cf>` — recommend the store for the runtime; refuses CF-KV-as-counter (O-20).
+- `echo brain "<question>"` — BM25 ranked search over `brain/` (the queryable Memory layer) → cited OPINIONS/PITFALLS/SCENARIOS rows.
+- `echo doctor` — assert env presence (`UPSTASH_REDIS_REST_URL`/`_TOKEN`) at boot (P-13); report store reachability.
+- `echo example --runtime <r>` — print the runtime-correct `upstash/ratelimit-js` example (lift-don't-generate, O-22).
+- `echo design <endpoint>` — route a request to the right sub-tools (limiter/idempotency/cache/stampede) and chain them.
+
+## MCP server (echo's OWN — 10 tools)
+
+- [.mcp.json](./.mcp.json): the `echo` server entry (env-ref keys only — no literal secrets; context7 kept as the staleness antidote).
+- **Endpoint / transport:** default **stdio** — `node dist/mcp-server.js`. Each tool reuses the gated Cluster-B command logic (the pure functions in `src/commands/*`), so the MCP tools never drift from the CLI.
+- **`tools/list`** returns: `echo_audit_state` (→`echo audit`), `echo_design_limiter` (→`echo limiter`),
+  `echo_design_cache` (→`echo cache`), `echo_design_idempotency` (→`echo idempotency`), `echo_design_stampede`
+  (→`echo stampede`), `echo_cost` (→`echo cost`), `echo_key` (→`echo key`), `echo_recommend_store`
+  (→`echo store`), `echo_ask` (→`echo brain`), `echo_doctor` (→`echo doctor`).
+
+## Skills (each entry under `skills/` encodes a named brain cluster)
+
+- [echo-state-audit](./skills/echo-state-audit/SKILL.md): O-01/O-02 + P-01/P-02/P-03 + S-01 — the `new Map()`-on-serverless judgment (source-of-truth Map = BUG vs the one legit ephemeralCache Map). **(flagship — the turbo seam.)**
+- [echo-limiter-design](./skills/echo-limiter-design/SKILL.md): O-03..O-09 + P-04/P-05/P-06/P-07/P-11 — identity-key, atomic+shared decision, concurrency cap, fail-open/closed, IPv6 /64, spend cap. Refuses spoofable-header keys.
+- [echo-invalidation](./skills/echo-invalidation/SKILL.md): O-10..O-14 + P-17..P-21/P-26 — always-TTL+jitter, delete-don't-update + DB-first + double-delete, invalidate-in-`finally`, centralize-in-the-data-layer, version-key LLM caches. Knows `revalidateTag` is LAZY.
+- [echo-stampede-herd](./skills/echo-stampede-herd/SKILL.md): O-15..O-18 + P-22/P-23/P-24/P-25 — distributed single-flight (not in-process), full-jitter backoff, admission-first, fix-the-origin-before-caching.
+- [echo-cost-and-migrate](./skills/echo-cost-and-migrate/SKILL.md): O-19/O-20/O-23 + P-15/P-16/P-13 — count commands not requests, Regional-not-Global, fixed-instance break-even, never-a-limiter-on-CF-KV, Valkey-as-the-cost-default.
+
+## Sub-agents (packaged reviewer personas)
+
+- [.claude/agents/echo-limiter-reviewer.md](./.claude/agents/echo-limiter-reviewer.md): reviews a diff against the P-01..P-29 limiter pitfalls (spoofable keys, non-atomic decision, missing concurrency cap, in-process single-flight, fail-open on a security endpoint).
+- [.claude/agents/echo-invalidation-auditor.md](./.claude/agents/echo-invalidation-auditor.md): scoped to cache-staleness — `DEL→0` unlogged, no-TTL, forgotten write path, dual-write race.
+
+## Hook (the anti-pattern guard — dogfood: echo's harness obeys echo's law)
+
+- [hooks/echo-state-guard.js](./hooks/echo-state-guard.js): a PreToolUse (Edit/Write) hook that blocks introducing a `new Map()` source-of-truth counter into an `app/api/**` path (P-01) while passing the legit `ephemeralCache: new Map()` (P-02). Reuses the same detector the `echo audit` CLI uses.
+
+## The brain (Memory — echo's expertise; queryable via `echo brain`)
+
+- [brain/OPINIONS.md](./brain/OPINIONS.md): 23 defended ALWAYS/NEVER stances, each with a reason + source + escape hatch (O-01..O-23).
+- [brain/KNOWN-PITFALLS.md](./brain/KNOWN-PITFALLS.md): 29 version-pinned gotchas with a detection grep + fix (P-01..P-29).
+- [brain/BATTLE-TESTED-SCENARIOS.md](./brain/BATTLE-TESTED-SCENARIOS.md): 19 production failure scenarios (the WRONG-MOVE/RESOLUTION pairs the golden tasks mine) — S-01..S-19.
+- [brain/EXPERTISE-MAP.md](./brain/EXPERTISE-MAP.md): the topic graph of the rate-limit/cache domain.
+- [brain/GAPS-AND-DISPUTES.md](./brain/GAPS-AND-DISPUTES.md): the open disputes + unsolved edges (intellectual honesty layer).
+- [brain/TOOL-MATRIX.md](./brain/TOOL-MATRIX.md): the store/library decision matrix + §8 one-screen default stack.
+
+## RSI / self-improvement
+
+- [dsip.json](./dsip.json): the Darwin self-improvement spec (domains: currency / eval-regression / experiments). The deterministic $0 half runs in CI; the Claude half is gated on `CLAUDE_CODE_OAUTH_TOKEN`.
+
+## The acceptance test (the bar)
+
+On a fresh checkout with the SRH+Redis service up: `echo limiter` wraps a handler with a sliding-window limiter
+whose limit HOLDS under concurrent load (`admitted == limit`), `echo cache` produces a working
+stale-while-revalidate path with a jittered TTL, and `echo audit` exits non-zero on a `new Map()` cross-request
+counter while passing an `ephemeralCache: new Map()`. Local-first / $0 / no-creds by default (D15); the live-Upstash
+path is a separate on-demand CI job. See `SANDBOX.md`.
