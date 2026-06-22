@@ -4,7 +4,7 @@
  *
  * The Darwin "AutoLab" loop, DETERMINISTIC + $0 + TOKENLESS half (D8). Run directly (`node workflows/rsi.workflow.js`),
  * it executes the four PLAN §11 checks and exits 0 on a healthy repo:
- *   1. version-currency — `npm view @upstash/ratelimit version` vs the pinned 2.0.81; drift → PROPOSE (never auto-edit).
+ *   1. version-currency — `npm view @upstash/ratelimit version` vs the pinned 2.0.8; drift → PROPOSE (never auto-edit).
  *   2. doc-currency — assert the brain's flagged currency caveats (D-F Fluid-Compute, G-* secondhand figures) still
  *      carry their "re-verify / likely / secondhand" markers so echo never asserts them as hard fact.
  *   3. eval-regression — re-run the eval pyramid via `pnpm eval`; any regression blocks (test-gate). Degrades to
@@ -31,8 +31,10 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(HERE, "..");
 
-// The pinned default-stack version (PLAN §14 RESOLVED: current 2.0.81 point release; dsip.json version-currency row).
-const RATELIMIT_PIN = "2.0.81";
+// The pinned default-stack version (brain TOOL-MATRIX: @upstash/ratelimit 2.0.8 = the current npm release, verified
+// 2026-06-21; dsip.json version-currency row). Must equal the brain pin (Cluster A corrected 2.0.81→2.0.8 in 9afca57);
+// keep them aligned or version-currency cries wolf forever.
+const RATELIMIT_PIN = "2.0.8";
 
 // Load-bearing brain facts whose doctrine must still parse (a missing one = the brain silently drifted).
 const BRAIN_PIN_FACTS = [
