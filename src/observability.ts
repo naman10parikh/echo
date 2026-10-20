@@ -40,11 +40,11 @@ export interface RunRecord {
 }
 
 /**
- * The model every echo node runs on. Per D12/D14 the whole CP123 fleet is `claude-opus-4-8[1m]` at max effort —
+ * The model every echo node runs on. Per D12/D14 the whole CP123 fleet runs Claude Code's default model at max effort —
  * the run log records it so observability proves the model-routing invariant (no bare-default downshift).
  * Overridable via `ANTHROPIC_MODEL` for forward-compat, but defaults to the locked CP123 model.
  */
-const ECHO_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8[1m]";
+const ECHO_MODEL = process.env.ANTHROPIC_MODEL || "default";
 
 /** Resolve the repo-root `logs/runs.jsonl` from this module's location (dist/observability.js → ../logs). */
 function runsLogPath(): string {
