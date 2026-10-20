@@ -1,5 +1,5 @@
 {
-  "$comment": "echo harness settings (checked in). The signature PreToolUse hook is echo-state-guard — it blocks a new Map() source-of-truth counter being introduced into an app/api/** path (P-01) while passing the legit ephemeralCache Map (P-02). It reuses the same dist/lib/map-detector.js the `echo audit` CLI uses (one rule, one place). This is acceptance-test clause 3 at edit-time. Requires `pnpm build` so dist/ exists; the hook fails OPEN if the build is stale (it is a dev-ergonomics guard, not a security gate).",
+  "$comment": "echo harness settings (checked in). The signature PreToolUse hook is echo-state-guard — it blocks a new Map() source-of-truth counter being introduced into an app/api/** path (P-01) while passing the legit ephemeralCache Map (P-02). It reuses the same dist/lib/map-detector.js the `echo audit` CLI uses (one rule, one place). This is acceptance-test clause 3 at edit-time. It loads dist/ after `pnpm build`, else the source detector (Node 22.18+), else it fails OPEN (it is a dev-ergonomics guard, not a security gate).",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/echo/hooks/echo-state-guard.js",
+            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/echo-state-guard.js\"",
             "timeout": 5000
           }
         ]

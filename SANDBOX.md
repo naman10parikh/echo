@@ -7,7 +7,7 @@
 > REST API. `@upstash/ratelimit` talks to SRH **exactly** as it talks to Upstash, with **zero Upstash creds**.
 > This is the `D15` local-first / `$0` / no-creds merge gate: the CI `acceptance` job boots this envelope and the
 > limiter hits it (rc 0, proven by run-id). The **live-Upstash** path is a SEPARATE, ADDITIVE, non-blocking
-> `workflow_dispatch` job (D7 → CHAIRMAN-CHECKLIST), never a merge blocker.
+> `workflow_dispatch` job (its secrets are set once by the maintainer), never a merge blocker.
 
 ---
 
@@ -95,7 +95,7 @@ on a **bare `pnpm install && pnpm build && pnpm run test:acceptance:*`** with **
 - The CI `acceptance` job ADDS the SRH smoke (`scripts/acceptance/srh-limiter-smoke.mjs`) so the **real lib + real
   REST path** is exercised against the booted SRH — satisfying §11's "limiter hitting SRH (rc 0, run-id)".
 
-Net: the merge gate is GREEN with **zero chairman action** (SRH is hermetic; the in-proc fallback needs nothing).
+Net: the merge gate is GREEN with **zero maintainer action** (SRH is hermetic; the in-proc fallback needs nothing).
 
 ---
 
@@ -103,11 +103,11 @@ Net: the merge gate is GREEN with **zero chairman action** (SRH is hermetic; the
 
 A SEPARATE `workflow_dispatch` job (`live-upstash`) proves the real Upstash REST path + genuine multi-instance
 behavior (X-1) against a **free-tier** Upstash account (provisioned under D7). It is **non-blocking** by design
-(quota / flake isolation, mirrors the fleet's rocket-V5 / turbo-V2 pattern). Its secrets are a CHAIRMAN-CHECKLIST
-item (`ECHO-2`), never required for merge:
+(quota / flake isolation, mirrors the fleet's rocket-V5 / turbo-V2 pattern). Its secrets are set once by the
+maintainer and are never required for merge:
 
 ```bash
-# chairman-only, one-time (free tier, console.upstash.com → [removed]):
+# maintainer-only, one-time (a free-tier database at console.upstash.com):
 gh secret set UPSTASH_REDIS_REST_URL   --repo <owner>/echo --body "https://<db>.upstash.io"
 gh secret set UPSTASH_REDIS_REST_TOKEN --repo <owner>/echo --body "<rest-token>"
 # then: Actions tab → "echo CI" → live-upstash → Run workflow
@@ -120,8 +120,6 @@ Until provisioned, `live-upstash` is skipped (the job guards on the secret being
 
 ## See also
 
-- `PLAN.md` §5 (the acceptance test) · §8 (required secrets) · §3 C11 (sandbox component).
 - `HARNESS-OVERRIDES.md` §11 (the ✅ bar) · §9 (evals + the acceptance test green in CI).
-- `CHAIRMAN-CHECKLIST.md` — `ECHO-2` (live-Upstash secrets) · `ECHO-3` (post-push acceptance run-id).
 - `.github/workflows/echo-ci.yml` — the `acceptance` + `live-upstash` jobs.
 - `test/acceptance/limiter.test.ts` · `test/acceptance/cache.test.ts` · `scripts/acceptance/srh-limiter-smoke.mjs`.

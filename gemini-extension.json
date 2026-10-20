@@ -1,0 +1,17 @@
+{
+  "name": "echo",
+  "version": "0.1.0",
+  "description": "Rate limits and caching for serverless APIs.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "echo": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "-p",
+        "github:naman10parikh/echo",
+        "echo-mcp"
+      ]
+    }
+  }
+}

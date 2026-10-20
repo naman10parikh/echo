@@ -1,7 +1,7 @@
 ---
 name: echo-limiter-reviewer
 description: Reviews a diff for rate-limiter / distributed-state pitfalls (P-01..P-16, P-29) — spoofable keys, non-atomic decisions, missing concurrency caps, in-process single-flight on serverless, fail-open on security endpoints. Read-only; reports, never fixes. Use after any change to a limiter, counter, idempotency, or cross-request-state surface.
-model: claude-opus-4-8[1m]
+model: opus
 allowed-tools: ["Read", "Glob", "Grep"]
 ---
 

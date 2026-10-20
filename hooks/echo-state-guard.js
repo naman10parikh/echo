@@ -66,13 +66,20 @@ function block(reason) {
  */
 async function loadScanText() {
   // hooks/ is at the repo root; the compiled detector is dist/lib/map-detector.js (relative to repo root).
-  const detectorPath = join(__dirname, "..", "dist", "lib", "map-detector.js");
-  try {
-    const mod = await import(detectorPath);
-    return typeof mod.scanText === "function" ? mod.scanText : null;
-  } catch {
-    return null; // stale/missing build → fail-open (don't block a dev over our own build state)
+  // A plugin install has no dist/, so fall back to the source file: Node 22.18+ strips its types on import.
+  const candidates = [
+    join(__dirname, "..", "dist", "lib", "map-detector.js"),
+    join(__dirname, "..", "src", "lib", "map-detector.ts"),
+  ];
+  for (const detectorPath of candidates) {
+    try {
+      const mod = await import(detectorPath);
+      if (typeof mod.scanText === "function") return mod.scanText;
+    } catch {
+      // Intentionally silent: try the next candidate; none loading means fail-open below.
+    }
   }
+  return null; // stale/missing build and no type-stripping Node → fail-open (don't block a dev over our build state)
 }
 
 async function main() {

@@ -1,0 +1,17 @@
+{
+  "name": "echo",
+  "owner": {
+    "name": "Naman Parikh",
+    "url": "https://github.com/naman10parikh"
+  },
+  "metadata": {
+    "description": "Rate limits and caching for serverless APIs."
+  },
+  "plugins": [
+    {
+      "name": "echo",
+      "source": "./",
+      "description": "Rate limits and caching for serverless APIs."
+    }
+  ]
+}

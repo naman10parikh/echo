@@ -1,0 +1,13 @@
+{
+  "description": "echo's state guard: blocks a new Map() source-of-truth counter in app/api/** and allows the ephemeralCache Map.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/echo-state-guard.js\"", "timeout": 5000 }
+        ]
+      }
+    ]
+  }
+}

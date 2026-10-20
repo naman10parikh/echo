@@ -1,7 +1,7 @@
 ---
 name: echo-invalidation-auditor
 description: Audits a diff for cache-invalidation / staleness pitfalls (P-17..P-28) — DEL→0 swallowed, no-TTL zombie keys, forgotten write paths, dual-write races, success-only invalidation, revalidateTag-is-lazy, stale LLM caches. Read-only; reports, never fixes. Use after any change to a cache read/write/invalidation surface.
-model: claude-opus-4-8[1m]
+model: opus
 allowed-tools: ["Read", "Glob", "Grep"]
 ---
 

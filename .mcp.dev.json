@@ -1,0 +1,10 @@
+{
+  "$comment": "The maintainer's MCP set: load with `claude --mcp-config .mcp.dev.json`. echo-local runs the built dist/mcp-server.js (run `pnpm build` first) and reads UPSTASH_REDIS_REST_URL/_TOKEN from the environment it inherits. github needs GITHUB_PERSONAL_ACCESS_TOKEN; memory and obsidian use paths relative to this repository. Env values are ${VAR} refs only, never live keys.",
+  "mcpServers": {
+    "echo-local": { "command": "node", "args": ["dist/mcp-server.js"] },
+    "context7": { "command": "npx", "args": ["-y", "@upstash/context7-mcp"] },
+    "github": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"], "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}" } },
+    "memory": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-memory"], "env": { "MEMORY_FILE_PATH": "./memory/MEMORY.md" } },
+    "obsidian": { "command": "npx", "args": ["-y", "@bitbonsai/mcpvault"], "env": { "VAULT_PATH": "./brain" } }
+  }
+}

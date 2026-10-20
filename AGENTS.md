@@ -1,7 +1,8 @@
 # AGENTS.md — echo
 
-> This file tells a coding agent (Claude Code, a sibling Energy employee, the energy hub) what **echo** is and how to
-> invoke it. echo is the Energy fleet's **rate-limiting / caching domain-expert employee** — consumed by coding
+> This file tells a coding agent (Claude Code, Codex, Cursor, Gemini CLI, a sibling Energy employee) what **echo** is
+> and how to invoke it. It is the one set of instructions for every coding agent; `CLAUDE.md` adds only the Claude
+> Code specifics. echo is the Energy fleet's **rate-limiting / caching domain-expert employee** — consumed by coding
 > agents first, humans (the cockpit) second. Forged from Energy via harness-forge (CP103); Energy is the control
 > center, this is one self-contained flavor.
 
@@ -18,6 +19,22 @@ recycle, or fan out.* Almost every failure here is **synchronization** (fix: jit
 
 Call echo **before you store any cross-request state on serverless.**
 
+## The 3 roots (classify every failure, then apply the fix)
+
+1. **Shared-mutable-state** → atomic shared counters + keys-as-contracts. (`new Map()` source-of-truth, spoofable
+   header key, non-atomic decision, per-instance dedup. P-01/P-04/P-05/P-29.)
+2. **Synchronization** → jitter. (Fixed TTL = scheduled stampede; fixed backoff = recovery herd; in-process
+   single-flight on serverless. P-22/P-23. Jitter every TTL + full-jitter backoff.)
+3. **Keys-as-broken-contracts** → build the key in ONE function + make coverage a test. (`DEL→0` drift, route
+   coverage gap, forgotten write path. P-17/P-08/P-20.)
+
+## Measure, don't assert
+
+The brain marks some claims disputed/unmeasured (`brain/GAPS-AND-DISPUTES.md`, the 6 experiments **X-1..X-6**). On
+those: **say "disputed/unmeasured" and propose the measurement — never invent a number.** The RSI loop (`dsip.json`
++ `.github/workflows/echo-rsi.yml`) re-verifies brain currency and, when `CLAUDE_CODE_OAUTH_TOKEN` is set, runs the
+6 experiments and writes measured results back to `brain/ORG_MEMORY.md` (echo dogfooding its own stance).
+
 ## The boundary (the one seam with turbo)
 
 - **turbo** (backend/API-framework employee) **documents** the `new Map()`-on-serverless anti-pattern — the
@@ -28,6 +45,10 @@ Call echo **before you store any cross-request state on serverless.**
 ## How to invoke echo
 
 ### CLI (the hands) — `echo`
+
+Run from a clone with `node dist/cli.js <command>`, or straight from GitHub with
+`npx -y -p github:naman10parikh/echo echo-cli <command>`. Use the `echo-cli` bin outside a clone: a shell runs its
+own built-in `echo` before any `echo` on the PATH, so `npx ... echo --help` would just print `--help`.
 ```
 echo --help | --version                  # usage; exits 0
 echo audit <path>                         # scan app/api/** for the new Map() anti-pattern (P-01) — reports a
@@ -57,8 +78,10 @@ echo_recommend_store    { runtime }                          -> { store, why, re
 echo_ask                { question }                         -> { answer, citations:["brain/OPINIONS.md#O-04"] }
 echo_doctor             {}                                   -> { envOK, missing, reachable }
 ```
-Run the MCP server via the entry in `.mcp.json` (stdio default; env values are `${VAR}` refs only — no live keys).
-`context7` is kept alongside echo's own server (the docs MCP — the staleness antidote).
+Start it over stdio, straight from GitHub, in any MCP client: `npx -y -p github:naman10parikh/echo echo-mcp`. The
+root `.mcp.json` does exactly this, with `context7` kept alongside (the docs MCP — the staleness antidote). The
+maintainer's set (the local build, github, memory, obsidian) is in `.mcp.dev.json`; env values are `${VAR}` refs
+only — no live keys.
 
 ### Skills (the taste, operationalized) — `skills/*/SKILL.md`
 `echo-state-audit` (the `new Map()` boundary — flagship) · `echo-limiter-design` · `echo-invalidation` ·
@@ -94,6 +117,20 @@ Run the MCP server via the entry in `.mcp.json` (stdio default; env values are `
    silent total bypass (O-03/P-04).
 3. A rate limiter / per-request counter on **Cloudflare Workers KV** — eventually consistent (up to 60s) + 1
    write/sec/key → silently fails open (O-20/P-16).
+
+## Develop and test
+
+```bash
+pnpm install && pnpm build             # tsc → dist/ (dist/ is not committed; `prepare` builds it on a git install)
+pnpm test                              # vitest: unit, contract and acceptance tests
+pnpm run test:acceptance:limiter       # admitted == limit under a concurrent burst (in-proc; SRH in CI)
+pnpm run test:acceptance:cache         # miss→fill, hit, stale-served + background refetch, jittered TTL
+pnpm eval                              # the Hamel L1/L2/L3 golden pyramid (8 🔴 tasks block CI)
+node workflows/rsi.workflow.js         # the deterministic improvement loop: drift proposals, never an edit
+```
+
+CI runs the build, the tests, the acceptance tests against a booted Redis + SRH pair, and the eval pyramid on every
+push to main and every pull request. A change that lowers an eval score does not merge. Lessons become rules in `memory/LEARNINGS.md`.
 
 ## Commit convention
 

@@ -2,6 +2,7 @@
   "protocolVersion": "1.0",
   "name": "echo",
   "description": "The Energy fleet's rate-limiting / caching domain-expert employee. Turns 'use Upstash' into a correct, tested, costed limiter/cache: picks the store + algorithm + key schema + TTL + invalidation + idempotency semantics, refuses a new Map() counter / a spoofable-header key / a limiter on Cloudflare KV, and proves the limit HOLDS under concurrent load. Owns the HTTP-edge rate-limit/cache/edge-KV seam — the correct externalization of the cross-request state turbo forbids in app/api/**. Three roots: shared-mutable-state, synchronization, keys-as-broken-contracts. Powered by Energy.",
+  "url": "https://github.com/naman10parikh/echo",
   "version": "0.1.0",
   "provider": {
     "organization": "Energy",

@@ -9,7 +9,9 @@
     "url": "https://github.com/naman10parikh/echo.git"
   },
   "bin": {
-    "echo": "dist/cli.js"
+    "echo": "dist/cli.js",
+    "echo-cli": "dist/cli.js",
+    "echo-mcp": "dist/mcp-server.js"
   },
   "main": "dist/cli.js",
   "types": "dist/cli.d.ts",
@@ -25,6 +27,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepare": "tsc",
     "dev": "tsc --watch",
     "brain:index": "node dist/scripts/build-brain-index.js",
     "test": "vitest run",
