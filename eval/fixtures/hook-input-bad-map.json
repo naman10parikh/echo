@@ -1,6 +1,6 @@
 {
   "session_id": "test-echo-state-guard",
-  "cwd": "~/echo",
+  "cwd": "/workspace/app",
   "permission_mode": "default",
   "tool_name": "Write",
   "tool_input": {
