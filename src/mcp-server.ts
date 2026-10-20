@@ -15,6 +15,7 @@
  * over the `tools/list` + `tools/call` JSON-RPC contract the §9 contract test asserts. (Karpathy: Simplicity First —
  * minimum surface that satisfies the contract.)
  */
+import { realpathSync } from "node:fs";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -271,10 +272,16 @@ async function main(): Promise<void> {
   // The server now reads JSON-RPC from stdin and writes to stdout; it stays alive until the transport closes.
 }
 
-// Run as a stdio server only when executed directly (`node dist/mcp-server.js`), never on import.
-const invokedDirectly =
-  process.argv[1] !== undefined &&
-  (process.argv[1].endsWith("mcp-server.js") || process.argv[1].endsWith("mcp-server.ts"));
+// Run as a stdio server only when executed directly (`node dist/mcp-server.js`), never on import. The
+// `echo-mcp` bin that npx and the plugin start is a symlink in node_modules/.bin, so resolve it first.
+function entryPath(): string {
+  try {
+    return process.argv[1] !== undefined ? realpathSync(process.argv[1]) : "";
+  } catch {
+    return process.argv[1] ?? ""; // Intentionally silent: an unresolvable argv[1] falls back to the raw path.
+  }
+}
+const invokedDirectly = entryPath().endsWith("mcp-server.js") || entryPath().endsWith("mcp-server.ts");
 if (invokedDirectly) {
   main().catch((err) => {
     process.stderr.write(`echo MCP server failed to start: ${err instanceof Error ? err.message : String(err)}\n`);
