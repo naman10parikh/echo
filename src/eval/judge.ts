@@ -11,8 +11,8 @@
  *      grader over echo's emitted answer. This is the calibrated proxy — it is the SAME property the L1 assert
  *      checks, but framed as "did the trajectory reach the resolution". It is deterministic so `pass^k` is
  *      meaningful and `npm run eval` is green with no API key.
- *   2. REAL LLM JUDGE (additive, gated on ANTHROPIC_API_KEY): when the key is present, an Anthropic
- *      `claude-opus-4-8[1m]` call grades the same trajectory and we AND the two verdicts (the real judge can
+ *   2. REAL LLM JUDGE (additive, gated on ANTHROPIC_API_KEY and ECHO_JUDGE_MODEL): when both are set, a call to
+ *      the model named in ECHO_JUDGE_MODEL grades the same trajectory and we AND the two verdicts (the real judge can
  *      only make the bar stricter, never looser — it never turns a deterministic FAIL into a PASS). This keeps
  *      the merge gate non-flaky (deterministic) while letting the nightly run exercise the real judge (D8-style
  *      "present-but-deferred": no key → the deterministic verdict stands).
@@ -43,8 +43,11 @@ export interface Verdict {
   readonly source: "deterministic" | "llm+deterministic";
 }
 
-/** The model the real L3 judge runs on (D12/D14: every echo node is Opus 4.8 max). Overridable for forward-compat. */
-const JUDGE_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8[1m]";
+/**
+ * The model the real L3 judge runs on, named by the person in ECHO_JUDGE_MODEL. The Messages API needs a model name
+ * and echo never picks one (a fixed ID goes stale), so with no name the deterministic verdict stands.
+ */
+const judgeModel = (): string => process.env.ECHO_JUDGE_MODEL?.trim() ?? "";
 
 /**
  * The deterministic trajectory grade: the answer reaches the resolution (regex hits) AND does not contain the
@@ -64,17 +67,18 @@ function deterministicVerdict(spec: JudgeSpec): { passed: boolean; detail: strin
 }
 
 /**
- * Grade an L3 trajectory. Deterministic by default; if `ANTHROPIC_API_KEY` is set, ALSO ask the real judge and
- * AND the verdicts (strictly tightening). Always fail-soft to the deterministic verdict.
+ * Grade an L3 trajectory. Deterministic by default; if `ANTHROPIC_API_KEY` and `ECHO_JUDGE_MODEL` are set, ALSO
+ * ask the real judge and AND the verdicts (strictly tightening). Always fail-soft to the deterministic verdict.
  */
 export async function judge(spec: JudgeSpec): Promise<Verdict> {
   const det = deterministicVerdict(spec);
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) {
+  const model = judgeModel();
+  if (!key || !model) {
     return { ...det, source: "deterministic" };
   }
   try {
-    const llmPass = await askRealJudge(spec, key);
+    const llmPass = await askRealJudge(spec, key, model);
     // AND the verdicts: the real judge can only make the bar STRICTER (never flips a deterministic FAIL → PASS).
     const passed = det.passed && llmPass;
     return {
@@ -92,9 +96,9 @@ export async function judge(spec: JudgeSpec): Promise<Verdict> {
  * Ask the real Anthropic judge whether the trajectory reaches the resolution. Returns a boolean. Uses the
  * Messages REST API via `fetch` (no SDK). The prompt forces a strict `PASS`/`FAIL` token so parsing is trivial.
  */
-async function askRealJudge(spec: JudgeSpec, apiKey: string): Promise<boolean> {
+async function askRealJudge(spec: JudgeSpec, apiKey: string, model: string): Promise<boolean> {
   const body = {
-    model: JUDGE_MODEL,
+    model,
     max_tokens: 16,
     system:
       "You grade whether a rate-limiting/caching expert's answer reaches the correct RESOLUTION for a scenario " +

@@ -51,9 +51,10 @@ const CURRENCY_CAVEATS = [
   { file: "brain/GAPS-AND-DISPUTES.md", re: /(likely|secondhand)/i, label: "G-* secondhand-figures honesty marker" },
 ];
 
-// Model routing (D12/D14): the deferred Claude half runs on Opus 4.8, max — named explicitly so model routing is
-// grep-able (no bare default). The 6 EXPERIMENTS each become an Opus sub-agent task when the Claude half lights up.
-export const RSI_MODEL = "claude-opus-4-8[1m]"; // model: claude-opus-4-8[1m] (Claude half, deferred D8)
+// Model routing (D12/D14): the deferred Claude half runs on Opus, max, named explicitly so model routing is grep-able
+// (no bare default). It is the alias, never a fixed ID, so it moves to each new Opus by itself. The 6 EXPERIMENTS
+// each become an Opus sub-agent task when the Claude half lights up.
+export const RSI_MODEL = "opus"; // the alias (Claude half, deferred D8)
 
 export const EXPERIMENTS = [
   { id: "X-1", goal: "measure multi-instance + HTTP/2-hold limiter behavior against live Upstash" },
@@ -75,7 +76,7 @@ export async function runExperiments(spawn) {
   const results = [];
   for (const exp of EXPERIMENTS) {
     const task = spawn({
-      model: RSI_MODEL, // explicit claude-opus-4-8[1m] on every spawn (D12/D14)
+      model: RSI_MODEL, // explicit on every spawn (D12/D14): the alias opus
       prompt:
         `You are echo's RSI experiment runner. Run experiment ${exp.id}: ${exp.goal}. ` +
         `MEASURE the outcome (do not assert from memory). Write the measured result + date to brain/ORG_MEMORY.md, ` +

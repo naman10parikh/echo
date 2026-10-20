@@ -46,7 +46,7 @@ export interface GoldenTask {
   readonly assert: () => CheckResult;
   /**
    * L3 only: the trajectory-judge spec (echo's emitted answer + resolution/wrong-move regexes). The runner calls
-   * `judge(spec)` — deterministic stand-in by default, real Anthropic judge when `ANTHROPIC_API_KEY` is set
+   * `judge(spec)` — deterministic stand-in by default, real Anthropic judge when `ANTHROPIC_API_KEY` and `ECHO_JUDGE_MODEL` are set
    * (strictly tightening; see judge.ts). Absent on L1/L2 tasks.
    */
   readonly judgeSpec?: () => JudgeSpec;
