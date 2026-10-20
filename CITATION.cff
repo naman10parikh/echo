@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "Echo: Rate limits and caching for serverless APIs."
+type: software
+authors:
+  - family-names: Parikh
+    given-names: Naman
+repository-code: "https://github.com/naman10parikh/echo"
+license: MIT
+version: "0.1.0"
+abstract: "Rate limits and caching for serverless APIs."
+keywords: ["agent-native", "rate-limiting", "caching", "upstash"]
