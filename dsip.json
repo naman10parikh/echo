@@ -16,7 +16,7 @@
       "ship"
     ]
   },
-  "selection": "performance-novelty",
+  "selection": "performance",
   "eval": {
     "rubric": "eval/golden/run.ts",
     "gate": "no-regression && all-pass && acceptance-test-green",
