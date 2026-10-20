@@ -30,6 +30,9 @@ permissions:
 jobs:
   deterministic-rsi:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -92,3 +95,25 @@ jobs:
         run: |
           echo "RSI engine (workflows/rsi.workflow.js) or package.json not present yet — exiting green."
           exit 0
+
+      - name: Open or update the proposal issue for a person to review
+        if: always() && hashFiles('workflows/proposals/rsi-*.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          files=(workflows/proposals/rsi-*.md)
+          proposal=${files[${#files[@]}-1]}
+          [ -s "$proposal" ] || { echo "The proposal file is empty, so no issue."; exit 0; }
+          gh label create proposal --color 2f5d8a --description "A change the self-improvement loop proposes for a person to review" --force
+          {
+            echo "Written by the scheduled self-improvement loop on $(date -u '+%Y-%m-%d %H:%M UTC'). It proposes; a person decides. The loop never merges."
+            echo
+            cat "$proposal"
+          } > "$RUNNER_TEMP/proposal-issue.md"
+          number=$(gh issue list --label proposal --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --body-file "$RUNNER_TEMP/proposal-issue.md"
+          else
+            gh issue create --title "Echo: proposal from the self-improvement loop" --label proposal --body-file "$RUNNER_TEMP/proposal-issue.md"
+          fi
