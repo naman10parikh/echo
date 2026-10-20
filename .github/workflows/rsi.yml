@@ -66,6 +66,7 @@ jobs:
         if: steps.rt.outputs.armed == 'true'
         # Shells `npm view` + reads brain/**.md + (when built) re-runs the eval pyramid.
         # It DETECTS + PROPOSES drift; it never calls the model and never auto-edits.
+        shell: bash # pipefail: a failing engine fails the step, not tee
         run: |
           node workflows/rsi.workflow.js | tee rsi-report.txt
 
