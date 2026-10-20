@@ -49,7 +49,7 @@ path, the dual-write race). The other personas in that folder are inherited from
 - **Named-file commits only.** Never `git add -A` / `git add .`. Stage the exact files for the item. Conventional
   commits (`feat(skill):` · `feat(employee):` · `feat(company):` so git snap-back works at all 3 granularities).
   Never commit `.env`. Never push without an explicit instruction.
-- **Model routing (D12/D14):** every node = `claude-opus-4-8[1m]`, max effort. Every sub-agent persona + every
+- **Model routing (D12/D14):** every node = the latest flagship Opus (Claude Code's default, or the alias `opus`; never a model ID), max effort. Every sub-agent persona + every
   workflow `agent()` spawn carries an **explicit** `model` — no bare-default spawn (the CP123-death root cause).
   `scripts/budget-manager.sh` is present but **inert** as a constraint (the weekly budget is disabled — never
   downshift/pause for budget; only a hard 5h `429` throttles → pause-and-resume).
