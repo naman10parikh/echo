@@ -36,7 +36,7 @@ jobs:
           # secrets/auth/compliance employees whose whole job is documenting key shapes).
           hits=$(grep -rInE 'sk-ant-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|xox[bap]-[A-Za-z0-9-]{10,}' \
                    --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=brain \
-                   --exclude='*.example' --exclude=PLAN.md --exclude=MASTER-TODOS.md . \
+                   --exclude='*.example' . \
                  | grep -viE 'dummy|example|placeholder|redacted|sample|fake|fixture|planted|your[-_]|x{6,}|\{\{|\$\{' || true)
           if [ -n "$hits" ]; then
             echo "$hits"
