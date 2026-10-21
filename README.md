@@ -19,7 +19,7 @@ Echo is an agent employee, a packaged specialist agent with its own skills, memo
 
 _Echo is part of an agent-native play for agent-native systems that can eventually be recursively self-improving and evolving, operated by agent employees._
 
-<p align="center"><img alt="Echo: on the command line" src="assets/terminal.svg" width="880"></p>
+<p align="center"><img alt="Echo: a real task, run offline" src="assets/demo.svg" width="880"></p>
 <!-- fleet:header:end -->
 
 echo turns "use Upstash" into a correct, tested, costed limiter or cache. It picks the store, the algorithm, the key schema, the TTL, the invalidation and the idempotency semantics, refuses a `new Map()` counter, a spoofable-header key and a limiter on Cloudflare KV, and proves the limit holds under concurrent load. It is for coding agents first (CLI and MCP) and people second (the cockpit): state that outlives the request, counted, cached and never leaked. Powered by Energy.
