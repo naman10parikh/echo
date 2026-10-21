@@ -4,14 +4,14 @@
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg"><img alt="Echo: Rate limits and caching for serverless APIs." src="assets/banner.svg" width="100%"></picture></p>
 
 <p align="center">
-<a href="https://github.com/naman10parikh/echo/releases"><img alt="Version" src="https://img.shields.io/badge/version-0.1.0-2f5d8a?style=flat-square"></a>
+<a href="https://github.com/naman10parikh/echo/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/naman10parikh/echo?style=flat-square&amp;color=2f5d8a"></a>
 <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2f5d8a?style=flat-square"></a>
 <a href="#use-it-from-any-coding-agent"><img alt="MCP server" src="https://img.shields.io/badge/MCP-server-1e3f60?style=flat-square"></a>
 <a href="https://x.com/naman10parikh"><img alt="Follow @naman10parikh on X" src="https://img.shields.io/badge/follow-%40naman10parikh-000000?style=flat-square&amp;logo=x&amp;logoColor=white"></a>
 <a href="https://www.linkedin.com/in/naman-parikh1/"><img alt="Naman Parikh on LinkedIn" src="https://img.shields.io/badge/LinkedIn-Naman%20Parikh-0a66c2?style=flat-square"></a>
 </p>
 
-<p align="center"><a href="#quick-start">Quick start</a> · <a href="docs/README.md">How it works</a> · <a href="AGENTS.md">AGENTS.md</a> · <a href="llms.txt">llms.txt</a> · <a href="skills/">Skills</a> · <a href="https://github.com/naman10parikh/echo/discussions">Discussions</a> · <a href="https://github.com/naman10parikh">All projects</a></p>
+<p align="center"><a href="#quick-start">Quick start</a> · <a href="https://naman10parikh.github.io/echo/">Website</a> · <a href="docs/README.md">How it works</a> · <a href="AGENTS.md">AGENTS.md</a> · <a href="llms.txt">llms.txt</a> · <a href="skills/">Skills</a> · <a href="https://github.com/naman10parikh/echo/discussions">Discussions</a> · <a href="https://github.com/naman10parikh">All projects</a></p>
 
 **Rate limits and caching for serverless APIs.**
 
@@ -19,7 +19,7 @@ Echo is an agent employee, a packaged specialist agent with its own skills, memo
 
 _Echo is part of an agent-native play for agent-native systems that can eventually be recursively self-improving and evolving, operated by agent employees._
 
-<p align="center"><img alt="Echo on the command line" src="assets/terminal.svg" width="880"></p>
+<p align="center"><img alt="Echo: on the command line" src="assets/terminal.svg" width="880"></p>
 <!-- fleet:header:end -->
 
 echo turns "use Upstash" into a correct, tested, costed limiter or cache. It picks the store, the algorithm, the key schema, the TTL, the invalidation and the idempotency semantics, refuses a `new Map()` counter, a spoofable-header key and a limiter on Cloudflare KV, and proves the limit holds under concurrent load. It is for coding agents first (CLI and MCP) and people second (the cockpit): state that outlives the request, counted, cached and never leaked. Powered by Energy.
@@ -217,11 +217,15 @@ One of the projects by [Naman Parikh](https://github.com/naman10parikh). Each ow
 | [WikiMem](https://github.com/naman10parikh/wikimem) | Memory |
 | [Skillsmith](https://github.com/naman10parikh/skillsmith) | Skills |
 | [Agent Booster](https://github.com/naman10parikh/agent-booster) | Tools / CLIs |
+| [Hooksmith](https://github.com/naman10parikh/hooksmith) | Hooks |
+| [AgentCast](https://github.com/naman10parikh/agentcast) | Sub-agents |
+| [Plugsmith](https://github.com/naman10parikh/plugsmith) | Plugins |
 | [Armory](https://github.com/naman10parikh/armory) | MCPs and the component registry |
 | [AgentGrid](https://github.com/naman10parikh/agentgrid) | Dispatch |
 | [AgentSwarm](https://github.com/naman10parikh/agentswarm) | Dispatch |
 | [AgentBench](https://github.com/naman10parikh/agentbench) | Evals |
 | [AgentMoney](https://github.com/naman10parikh/agentmoney) | Observability |
+| [Sandforge](https://github.com/naman10parikh/sandforge) | Sandbox / Infra |
 | [Claude Harness](https://github.com/naman10parikh/claude-harness) | The whole harness, as a template |
 
 ## Community
@@ -235,4 +239,14 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md). AI-assisted pull requests are welcome. 
 ## License
 
 MIT, © 2026 Naman Parikh. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+## Star history
+
+If it is useful to you, a star helps other people find it.
+
+<a href="https://star-history.com/#naman10parikh/echo&Date"><picture><source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=naman10parikh/echo&type=Date&theme=dark"><img alt="Star history chart" src="https://api.star-history.com/svg?repos=naman10parikh/echo&type=Date" width="640"></picture></a>
+
+## Contributors
+
+<a href="https://github.com/naman10parikh/echo/graphs/contributors"><img alt="Contributors" src="https://contrib.rocks/image?repo=naman10parikh/echo"></a>
 <!-- fleet:footer:end -->
